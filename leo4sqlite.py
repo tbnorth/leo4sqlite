@@ -1,5 +1,7 @@
 #leo4sqlite.py
 
+#test msg
+
 c.__ = {}
 
 import leo.core.leoGlobals

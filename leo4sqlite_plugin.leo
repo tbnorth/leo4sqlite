@@ -9,9 +9,8 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="tscv11.20180119175627.1" a="E"><vh>Sqlite3</vh>
-<v t="tscv11.20180119175627.2" a="E"
-expanded="tscv11.20180119175627.10,tscv11.20180119175627.37,"><vh>@file leo4sqlite.py</vh></v>
+<v t="tscv11.20180119175627.1"><vh>Sqlite3</vh>
+<v t="tscv11.20180119175627.2"><vh>@file leo4sqlite.py</vh></v>
 </v>
 </vnodes>
 <tnodes>

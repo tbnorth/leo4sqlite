@@ -731,54 +731,48 @@ class InputDialogs(QWidget):
     #@-others
 #@+node:tscv11.20180119175627.26: ** imports
 #@+others
-#@+node:tscv11.20180119175627.27: *3* import_table3
-def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
+#@+node:tscv11.20180119175627.29: *3* import_table1
+def import_table1(self, c, col_nums, col_names, col_types, blob_col, p):
 
-    db_filename = c.__['db_filename']
     table_name = c.__['table_name']
-    layout = c.__['layout']
+    filepath = c.__['db_filename']
+    layout = c.__['layout'] 
     
-    g.es("\nimporting table: " + table_name + "\n\n(layout 3)\n")
-
-    conn = sqlite3.connect(db_filename)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.execute("select * from " + table_name)
-    row = cursor.fetchone()
-    names = row.keys()
-
-    rx = 0
-    cx = 0
     num_cols = 0
-
-    p.b = p.b + "filepath: " + str(db_filename) + "\n\n"
-    p.b = p.b + str(col_names) + "\n"
-    p.b = p.b + str(col_types) + "\n\n"    
-    p.b = p.b + 'layout: ' + layout + '\n\n'
-
-    for col_num in col_nums:
+    for col in col_nums:
         num_cols = num_cols + 1
     
-    cx = 0
-    for col_name in names:
-        if cx == 0:
-            p = p.insertAsLastChild()
-        else:
-            p = p.insertAfter()
-        
-        p.h = col_name
-        c.redraw()
-        
-        rx = 0
-        rows = []
-        for row in cursor.execute("SELECT * FROM " + table_name):
-            rows.append(str(row[cx]))
-            p.b = p.b + (str(row[cx]) + "\n")
-            rx = rx + 1            
-            
-        cx = cx + 1
+    g.es("\nimporting table: " + table_name + "\n\n(layout 1)\n")
+                    
+    rx = 0
+    delim = ", "
+    new_row = ""
+    
+    p.b = p.b + 'filepath: ' + filepath + '\n\n'
+    p.b = p.b + str(col_names) + '\n'
+    p.b = p.b + str(col_types) + '\n\n'
+    p.b = p.b + 'layout: ' + layout + '\n\n'
 
+    conn = sqlite3.connect(filepath)
+    cursor = conn.cursor()
+
+    for row in cursor.execute("SELECT * FROM " + table_name):
+    
+        cx = 0 
+        if row != "":
+            cols = re.split(delim, str(row))
+
+            for col in cols:
+                if col != "":
+                    new_row = new_row + col + ", "
+                    cx = cx + 1
+                new_row = re.sub(r'[\"]', " ", str(new_row))   
+                                
+            p.b = p.b + str(new_row[1:-3]) + "\n"
+            new_row = ""
+            rx = rx + 1       
+    
     g.es("done\n")
-        
     c.redraw()
     headline = ("@tbl " + table_name)    
     tbl_node = g.findNodeAnywhere(c, (headline))
@@ -834,48 +828,54 @@ def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     headline = ("@tbl " + table_name)
     tbl_node = g.findNodeAnywhere(c, (headline))
     c.selectPosition(tbl_node)
-#@+node:tscv11.20180119175627.29: *3* import_table1
-def import_table1(self, c, col_nums, col_names, col_types, blob_col, p):
+#@+node:tscv11.20180119175627.27: *3* import_table3
+def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
 
+    db_filename = c.__['db_filename']
     table_name = c.__['table_name']
-    filepath = c.__['db_filename']
-    layout = c.__['layout'] 
+    layout = c.__['layout']
     
-    num_cols = 0
-    for col in col_nums:
-        num_cols = num_cols + 1
-    
-    g.es("\nimporting table: " + table_name + "\n\n(layout 1)\n")
-                    
+    g.es("\nimporting table: " + table_name + "\n\n(layout 3)\n")
+
+    conn = sqlite3.connect(db_filename)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.execute("select * from " + table_name)
+    row = cursor.fetchone()
+    names = row.keys()
+
     rx = 0
-    delim = ", "
-    new_row = ""
-    
-    p.b = p.b + 'filepath: ' + filepath + '\n\n'
-    p.b = p.b + str(col_names) + '\n'
-    p.b = p.b + str(col_types) + '\n\n'
+    cx = 0
+    num_cols = 0
+
+    p.b = p.b + "filepath: " + str(db_filename) + "\n\n"
+    p.b = p.b + str(col_names) + "\n"
+    p.b = p.b + str(col_types) + "\n\n"    
     p.b = p.b + 'layout: ' + layout + '\n\n'
 
-    conn = sqlite3.connect(filepath)
-    cursor = conn.cursor()
-
-    for row in cursor.execute("SELECT * FROM " + table_name):
+    for col_num in col_nums:
+        num_cols = num_cols + 1
     
-        cx = 0 
-        if row != "":
-            cols = re.split(delim, str(row))
+    cx = 0
+    for col_name in names:
+        if cx == 0:
+            p = p.insertAsLastChild()
+        else:
+            p = p.insertAfter()
+        
+        p.h = col_name
+        c.redraw()
+        
+        rx = 0
+        rows = []
+        for row in cursor.execute("SELECT * FROM " + table_name):
+            rows.append(str(row[cx]))
+            p.b = p.b + (str(row[cx]) + "\n")
+            rx = rx + 1            
+            
+        cx = cx + 1
 
-            for col in cols:
-                if col != "":
-                    new_row = new_row + col + ", "
-                    cx = cx + 1
-                new_row = re.sub(r'[\"]', " ", str(new_row))   
-                                
-            p.b = p.b + str(new_row[1:-3]) + "\n"
-            new_row = ""
-            rx = rx + 1       
-    
     g.es("done\n")
+        
     c.redraw()
     headline = ("@tbl " + table_name)    
     tbl_node = g.findNodeAnywhere(c, (headline))

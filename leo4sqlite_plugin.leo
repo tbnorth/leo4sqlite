@@ -16,6 +16,7 @@
 </v>
 </v>
 <v t="tscv11.20180119175627.1"><vh>Sqlite3</vh>
+<v t="tscv11.20180120122020.1"><vh>Sqlite3</vh></v>
 <v t="tscv11.20180119175627.2" a="E" descendentVnodeUnknownAttributes="7d710058010000003071017d7102580b0000005f5f626f6f6b6d61726b7371037d7104580700000069735f6475706571054930300a7373732e"
 expanded="tscv11.20180119175627.10,"><vh>@file leo4sqlite.py</vh></v>
 </v>
@@ -66,7 +67,7 @@ expanded="tscv11.20180119175627.10,"><vh>@file leo4sqlite.py</vh></v>
 I want to make this the best plugin I can rather than rushing to finish it. Leo deserves no less! Please provide any feedback you can, and don't hesitate to suggest improvements! :-)</t>
 <t tx="tscv11.20180119225939.1"></t>
 <t tx="tscv11.20180119230108.1" __bookmarks="7d7100580700000069735f6475706571014930300a732e">#Sqlite3:1</t>
-<t tx="tscv11.20180119230254.1"></t>
+<t tx="tscv11.20180119230254.1"># this is just for the layout while working on the script and can be deleted or ignored.</t>
 <t tx="tscv11.20180119230254.2">{
     "sizes": [
         801,
@@ -90,5 +91,6 @@ I want to make this the best plugin I can rather than rushing to finish it. Leo 
         }
     ]
 }</t>
+<t tx="tscv11.20180120122020.1" __bookmarks="7d7100580700000069735f6475706571014930300a732e">#Sqlite3:1</t>
 </tnodes>
 </leo_file>

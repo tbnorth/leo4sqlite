@@ -135,9 +135,10 @@ __version__ = '0.020'
 #@+node:tscv11.20180119175627.5: ** << imports >>
 import leo.core.leoGlobals as g
 
-import subprocess
-import os, re
+import os
+import re
 import sqlite3
+import subprocess
 
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QInputDialog

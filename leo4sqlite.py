@@ -145,8 +145,6 @@ from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QDesktopWidget
-
-# and here's the one I want to remove
 #@-<< imports >>
 #@+others
 #@+node:tscv11.20180119175627.6: ** onCreate

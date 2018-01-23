@@ -6,14 +6,13 @@
 #@@nocolor
 ''' **leo4sqlite v0.20** - by tscv11
  |
-
+self.setStyleSheet("padding 3px; background: white")
 *Introduction:*
 
 | The script 'leo4sqlite.py' is a Leo-specific python script that provides basic import/export
 | functionality between Leo outlines and sqlite3 tables, as well as blob support  (insert, extract,
 | search for a blob by any value in any column, view the blob in the render pane or open it
-| with external tools). The blobs are arranged one per row with the other columns in that row
-| containing information about them.
+| with external tools). 
 
 | Imported tables are stored internally as part of the outline, while exported tables (and blobs)
 | are stored in sqlite3 database files.
@@ -23,8 +22,17 @@
 
 | I am considering database level import/export functions to round things out if  there's
 | enough interest.
+|
 
-| *Development Status:*
+*Blobs*
+
+| Blobs are arranged one per row with the other columns in that row containing information
+| about them. The last three columns of each row are reserved for the blob, the filename,
+| and the extension, in that order. Any number of columns may be added  and used to
+| store additional information related to the blob (which will precede it in the table).
+|
+
+*Development Status:*
 
 | *This script is functional but still needs plenty of bug-fixing and fine-tuning.*
 |
@@ -151,8 +159,7 @@ from PyQt5.QtWidgets import QDesktopWidget
 def onCreate (tag, keys):
     
     c = keys.get('c')
-    c.__ = {}
-
+    c._leo4sqlite = {}
 #@+node:tscv11.20180119175627.7: ** init
 def init ():
         
@@ -208,72 +215,50 @@ class InputDialogs(QWidget):
         self.show() 
 
 
-    #@+node:tscv11.20180119175627.13: *3* get_settings
-    def get_settings(self, c):
-
-        p_lst = c.find_h(r'@directory.*\\leo4sqlite-output')
-        c.selectPosition(p_lst[0])
-        nd_str = str(p_lst[0])
-        folder = re.sub(r'^<pos.*@directory\s\"', '', nd_str)
-        folder = folder[:-2]
-        c.__['sqlite_out_dir'] = folder
-
-        p_lst = c.find_h(r'@directory.*\\leo4sqlite-temp')
-        c.selectPosition(p_lst[0])
-        nd_str = str(p_lst[0])
-        folder = re.sub(r'^<pos.*@directory\s\"', '', nd_str)
-        folder = folder[:-2]
-        c.__['sqlite_temp_dir'] = folder
-        
     #@+node:tscv11.20180119175627.14: *3* pick_action
     def pick_action(self, c):
         
-        self.get_settings(c)
+        # self.get_settings(c) tsc
 
-
-        if c.__['action'] == "import table":
+        if c._leo4sqlite['action'] == "import table":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.get_layout(c)
             self.grand_central(c)
             
-        if c.__['action'] == 'export table':
+        if c._leo4sqlite['action'] == 'export table':
             self.get_int_dbs(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.get_layout(c)
             self.grand_central(c)
         
-        if c.__['action'] == "view blob":
-            self.get_settings(c)
+        if c._leo4sqlite['action'] == "view blob":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.view_blob(c)
         
-        if c.__['action'] == "insert blob":
+        if c._leo4sqlite['action'] == "insert blob":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.insert_blob(c)
         
-        if c.__['action'] == "extract blob":
-            self.get_settings(c)
+        if c._leo4sqlite['action'] == "extract blob":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.extract_blob(c)
         
-        if c.__['action'] == "open blob":
-            self.get_settings(c)
+        if c._leo4sqlite['action'] == "open blob":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
             self.open_blob(c)
             
-        if c.__['action'] == "edit blob":
-            self.get_settings(c)
+        if c._leo4sqlite['action'] == "edit blob":
             self.get_ext_db(c)
             self.select_table(c)
             self.get_blob_col(c)
@@ -287,7 +272,7 @@ class InputDialogs(QWidget):
         QInputDialog.setStyleSheet(self, "background: white");
         db_fname, _ = QFileDialog.getOpenFileName(self,"select an external database:", "","db files (*.db);;db3 files (*.db3)", options=options)
                 
-        c.__['db_filename'] = db_fname
+        c._leo4sqlite['db_filename'] = db_fname
     #@+node:tscv11.20180119175627.16: *3* get_int_dbs
     def get_int_dbs(self, c):
         
@@ -313,13 +298,13 @@ class InputDialogs(QWidget):
             QInputDialog.setStyleSheet(self, "padding: 3px");
             QInputDialog.setStyleSheet(self, "background: white");
             item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose internal database: ", new_db3_lst, 0, False)
-            c.__['db_filename'] = item
+            c._leo4sqlite['db_filename'] = item
         else:
             g.es('no internal databases')
     #@+node:tscv11.20180119175627.17: *3* select_table
     def select_table(self, c):
 
-        db_filename = c.__['db_filename']
+        db_filename = c._leo4sqlite['db_filename']
         tbl_names = []
       
         conn = sqlite3.connect(db_filename)
@@ -335,10 +320,9 @@ class InputDialogs(QWidget):
         QInputDialog.setStyleSheet(self, "background: white");
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select a table: ", tbl_names, 0, False)
         
-        c.__['table_name'] = item
-        c.__['tbl_names'] = tbl_names
+        c._leo4sqlite['table_name'] = item
+        c._leo4sqlite['tbl_names'] = tbl_names
         
-
     #@+node:tscv11.20180119175627.18: *3* get_blob_col
     def get_blob_col(self, c):
         
@@ -350,8 +334,8 @@ class InputDialogs(QWidget):
         blob_col = 0
         ext_col = 0
         
-        db_filename = c.__['db_filename']
-        table_name = c.__['table_name']
+        db_filename = c._leo4sqlite['db_filename']
+        table_name = c._leo4sqlite['table_name']
 
         conn = sqlite3.connect(db_filename)
         cur = conn.cursor()
@@ -374,16 +358,18 @@ class InputDialogs(QWidget):
             
             ix = ix + 1
         
-        for i in range(len(col_nums)):
-            num_cols += 1
+        num_cols += len(col_nums) # tnb
         
-        c.__['num_cols'] = num_cols
-        c.__['col_names'] = col_names
-        c.__['col_types'] = col_types
-        c.__['col_nums'] = col_nums
-        c.__['blob_col'] = blob_col
-        c.__['file_col'] = file_col
-        c.__['ext_col'] = ext_col
+        # for i in range(len(col_nums)) # tsc
+            # num_cols += 1
+        
+        c._leo4sqlite['num_cols'] = num_cols
+        c._leo4sqlite['col_names'] = col_names
+        c._leo4sqlite['col_types'] = col_types
+        c._leo4sqlite['col_nums'] = col_nums
+        c._leo4sqlite['blob_col'] = blob_col
+        c._leo4sqlite['file_col'] = file_col
+        c._leo4sqlite['ext_col'] = ext_col
     #@+node:tscv11.20180119175627.19: *3* insert_blob
     def insert_blob(self, c):
             
@@ -394,9 +380,9 @@ class InputDialogs(QWidget):
         
         col_vals = []
         
-        db_filename = c.__['db_filename']
-        table_name = c.__['table_name']
-        col_names = c.__['col_names']
+        db_filename = c._leo4sqlite['db_filename']
+        table_name = c._leo4sqlite['table_name']
+        col_names = c._leo4sqlite['col_names']
         
         str_col_names = str(col_names)
         str_col_names = str_col_names[1:-1]
@@ -440,12 +426,12 @@ class InputDialogs(QWidget):
         ablob = []
         search_items = []
 
-        file_col = c.__['file_col']
-        ext_col = c.__['ext_col']
-        blob_col = c.__['blob_col']
-        col_names = c.__['col_names']
-        table_name = c.__['table_name']
-        db_filename = c.__['db_filename']
+        file_col = c._leo4sqlite['file_col']
+        ext_col = c._leo4sqlite['ext_col']
+        blob_col = c._leo4sqlite['blob_col']
+        col_names = c._leo4sqlite['col_names']
+        table_name = c._leo4sqlite['table_name']
+        db_filename = c._leo4sqlite['db_filename']
 
         items = (col_names)
         QInputDialog.setStyleSheet(self, "padding: 3px");
@@ -476,7 +462,9 @@ class InputDialogs(QWidget):
         filename = os.path.basename(row[file_col])
         extension = row[ext_col]
         
-        sqlite_out_dir = c.__['sqlite_out_dir']
+        sqlite_out_dir = c.config.getString("sqlite_out_dir") # c._leo4sqlite['sqlite_out_dir'] # tsc
+        sqlite_out_dir = sqlite_out_dir[1:-1]
+        
         filepath = sqlite_out_dir + '\\' + filename + extension
         
         with open(filepath, "wb") as output_file:   
@@ -493,14 +481,15 @@ class InputDialogs(QWidget):
         
         items = []
         
-        ext_col = c.__['ext_col']
-        blob_col = c.__['blob_col']
-        file_col = c.__['file_col']
-        col_names = c.__['col_names']
-        table_name = c.__['table_name']
-        db_filename = c.__['db_filename']
+        ext_col = c._leo4sqlite['ext_col']
+        blob_col = c._leo4sqlite['blob_col']
+        file_col = c._leo4sqlite['file_col']
+        col_names = c._leo4sqlite['col_names']
+        table_name = c._leo4sqlite['table_name']
+        db_filename = c._leo4sqlite['db_filename']
         
-        sqlite_temp_dir = c.__['sqlite_temp_dir']
+        sqlite_temp_dir = c.config.getString('sqlite_temp_dir') # c._leo4sqlite['sqlite_temp_dir'] # tnb
+        sqlite_temp_dir = sqlite_temp_dir[1:-1]
         
         p = g.findNodeAnywhere(c, '@data external tools')
         c.selectPosition(p)
@@ -535,7 +524,7 @@ class InputDialogs(QWidget):
         filename = os.path.basename(filename)
         extension = row[ext_col]
 
-        filepath = (sqlite_temp_dir + "\\" + filename + extension)
+        filepath = (sqlite_temp_dir + '\\' + filename + extension)
 
         with open(filepath, "wb") as output_file:        
             cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term])
@@ -550,13 +539,14 @@ class InputDialogs(QWidget):
         img_types = ['.png', '.jpg', '.bmp', '.gif']
         vid_types = ['.mp4', '.avi', '.wmv', '.flv', '.mov', '.mkv']
         
-        file_col = c.__['file_col']
-        ext_col = c.__['ext_col']
-        blob_col = c.__['blob_col']
-        col_names = c.__['col_names']
-        table_name = c.__['table_name']
-        db_filename = c.__['db_filename']
-        temp_dir = c.__['sqlite_temp_dir']
+        file_col = c._leo4sqlite['file_col']
+        ext_col = c._leo4sqlite['ext_col']
+        blob_col = c._leo4sqlite['blob_col']
+        col_names = c._leo4sqlite['col_names']
+        table_name = c._leo4sqlite['table_name']
+        db_filename = c._leo4sqlite['db_filename']
+        temp_dir = c.config.getString("sqlite_temp_dir") # c._leo4sqlite['sqlite_temp_dir'] # tnb
+        temp_dir = temp_dir[1:-1]
         
         def get_extension(path):
             extension = os.path.splitext(path)[1]
@@ -625,23 +615,26 @@ class InputDialogs(QWidget):
         def place_holder(line):
             return '({})'.format(', '.join('?' * len(line)))
             
-        col_names = c.__['col_names']
-        table_name = c.__['table_name']
-        db_filename = c.__['db_filename']
+        col_names = c._leo4sqlite['col_names']
+        table_name = c._leo4sqlite['table_name']
+        db_filename = c._leo4sqlite['db_filename']
         
         names = []
+
         QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        QInputDialog.setStyleSheet(self, "background: white");    
         name, okPressed = QInputDialog.getItem(self, "leo4sqlite","enter blob name:", names, 0, False)
         blob_name = name
         
         cols = (col_names)
+
         QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        QInputDialog.setStyleSheet(self, "background: white");    
         col, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column name:", cols, 0, False)
         edit_col = col
         
         values = []
+        
         QInputDialog.setStyleSheet(self, "padding 3px");
         QInputDialog.setStyleSheet(self, "background: white");
         value, okPressed = QInputDialog.getItem(self, "leo4sqlite", "enter new value:", values, 0, False)
@@ -657,15 +650,15 @@ class InputDialogs(QWidget):
     #@+node:tscv11.20180119175627.24: *3* get_layout
     def get_layout(self, c):
         
-        action = c.__['action']
-        table_name = c.__['table_name']    
+        action = c._leo4sqlite['action']
+        table_name = c._leo4sqlite['table_name']    
         
         if action == 'import table':
             items = ('one', 'two', 'three', 'four')
             QInputDialog.setStyleSheet(self, "padding: 3px");
             QInputDialog.setStyleSheet(self, "background: white");
             item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose a layout: ", items, 0, False)
-            c.__['layout'] = item
+            c._leo4sqlite['layout'] = item
             
         if action == 'export table':
             tbl_h = "@tbl " + str(table_name)
@@ -674,19 +667,19 @@ class InputDialogs(QWidget):
             lines = re.split(r'\n', p.b)
             line = lines[5]
             layout = line[8:]
-            c.__['layout'] = layout
+            c._leo4sqlite['layout'] = layout
             g.es('layout: ' + str(layout))
     #@+node:tscv11.20180119175627.25: *3* grand_central
     def grand_central(self, c):
 
-        db_filename = c.__['db_filename'] # pyf
-        col_names = c.__['col_names']
-        col_nums = c.__['col_nums']
-        col_types = c.__['col_types']
-        blob_col = c.__['blob_col']
-        layout = c.__['layout']
+        db_filename = c._leo4sqlite['db_filename'] # pyf
+        col_names = c._leo4sqlite['col_names']
+        col_nums = c._leo4sqlite['col_nums']
+        col_types = c._leo4sqlite['col_types']
+        blob_col = c._leo4sqlite['blob_col']
+        layout = c._leo4sqlite['layout']
             
-        if c.__['action'] == 'import table':
+        if c._leo4sqlite['action'] == 'import table':
             db3_h = "@db3 " + str(db_filename)
             p = g.findNodeAnywhere(c, db3_h)
             if p:
@@ -697,7 +690,7 @@ class InputDialogs(QWidget):
                 c.redraw(p)
 
             p = p.insertAsNthChild(1)
-            p.h = "@tbl " + str(c.__['table_name'])
+            p.h = "@tbl " + str(c._leo4sqlite['table_name'])
             c.selectPosition(p)
             c.redraw(p)
             
@@ -714,20 +707,20 @@ class InputDialogs(QWidget):
                 import_table4(self, c, p, col_nums, col_names, col_types, blob_col)
             
         
-        if c.__['action'] == 'export table':
+        if c._leo4sqlite['action'] == 'export table':
             
             p = c.p # tsc - is this necessary?
             
-            if c.__['layout'] == "one":
+            if c._leo4sqlite['layout'] == "one":
                 export_table1(self, c, p, col_nums, col_names, col_types, blob_col)
             
-            if c.__['layout'] == "two":
+            if c._leo4sqlite['layout'] == "two":
                 export_table2(self, c, p, col_nums, col_names, col_types, blob_col)
                 
-            if c.__['layout'] == "three":
+            if c._leo4sqlite['layout'] == "three":
                 export_table3(self, c, p, col_nums, col_names, col_types, blob_col)
                 
-            if c.__['layout'] == "four":
+            if c._leo4sqlite['layout'] == "four":
                 export_table4(self, c, p, col_nums, col_names, col_types, blob_col)
     #@-others
 #@+node:tscv11.20180119175627.26: ** imports
@@ -735,9 +728,9 @@ class InputDialogs(QWidget):
 #@+node:tscv11.20180119175627.29: *3* import_table1
 def import_table1(self, c, col_nums, col_names, col_types, blob_col, p):
 
-    table_name = c.__['table_name']
-    filepath = c.__['db_filename']
-    layout = c.__['layout'] 
+    table_name = c._leo4sqlite['table_name']
+    filepath = c._leo4sqlite['db_filename']
+    layout = c._leo4sqlite['layout'] 
     
     num_cols = 0
     for col in col_nums:
@@ -781,9 +774,9 @@ def import_table1(self, c, col_nums, col_names, col_types, blob_col, p):
 #@+node:tscv11.20180119175627.28: *3* import_table2
 def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
 
-    db_filename = c.__['db_filename']
-    table_name = c.__['table_name']
-    layout = c.__['layout']
+    db_filename = c._leo4sqlite['db_filename']
+    table_name = c._leo4sqlite['table_name']
+    layout = c._leo4sqlite['layout']
 
     num_cols = 0
     for col in col_nums:
@@ -832,9 +825,9 @@ def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
 #@+node:tscv11.20180119175627.27: *3* import_table3
 def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
 
-    db_filename = c.__['db_filename']
-    table_name = c.__['table_name']
-    layout = c.__['layout']
+    db_filename = c._leo4sqlite['db_filename']
+    table_name = c._leo4sqlite['table_name']
+    layout = c._leo4sqlite['layout']
     
     g.es("\nimporting table: " + table_name + "\n\n(layout 3)\n")
 
@@ -884,9 +877,9 @@ def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
 #@+node:tscv11.20180119175627.30: *3* import_table4
 def import_table4(self, c, p, col_nums, col_names, col_types, blob_col):
 
-    db_filename = c.__['db_filename']
-    table_name = c.__['table_name']
-    layout = c.__['layout']
+    db_filename = c._leo4sqlite['db_filename']
+    table_name = c._leo4sqlite['table_name']
+    layout = c._leo4sqlite['layout']
     
     g.es("\nimporting table: " + table_name + "\n\n(layout 4)\n")
 
@@ -962,7 +955,7 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
     def place_holder(line):
         return '({})'.format(', '.join('?' * len(line)))
     
-    table_name = c.__['table_name']
+    table_name = c._leo4sqlite['table_name']
 
     headline = ("@tbl " + table_name)
     tbl_node = g.findNodeAnywhere(c, (headline))        
@@ -990,7 +983,7 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
 
     lines = lines[8:]
     
-    db_filename = c.__['db_filename']
+    db_filename = c._leo4sqlite['db_filename']
     
     conn = sqlite3.connect(db_filename)
     cur = conn.cursor()
@@ -1025,7 +1018,7 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
 #     def place_holder(line):
 #         return '({})'.format(', '.join('?' * len(line)))
 #     
-#     table_name = c.__['table_name']
+#     table_name = c._leo4sqlite['table_name']
 # 
 #     headline = ("@tbl " + table_name)
 #     tbl_node = g.findNodeAnywhere(c, (headline))        
@@ -1057,7 +1050,7 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
 # 
 #     lines = lines[5:]
 #     
-#     db_filename = c.__['db_filename']
+#     db_filename = c._leo4sqlite['db_filename']
 #     
 #     conn = sqlite3.connect(db_filename)
 #     cur = conn.cursor()
@@ -1087,8 +1080,8 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
 def export_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     
     hlines = []
-    table_name = c.__['table_name']
-    db_filename = c.__['db_filename']
+    table_name = c._leo4sqlite['table_name']
+    db_filename = c._leo4sqlite['db_filename']
    
     def place_holder(line):
         return '({})'.format(', '.join('?' * len(line)))
@@ -1150,8 +1143,8 @@ def export_table3(self, c, p, col_nums, col_names, col_types, blob_col):
     def place_holder(line):
         return '({})'.format(', '.join('?' * len(line)))
 
-    table_name = c.__['table_name']
-    db_filename = c.__['db_filename']
+    table_name = c._leo4sqlite['table_name']
+    db_filename = c._leo4sqlite['db_filename']
 
     g.es("\nexporting table: " + table_name + "\n\n(layout 3)\n") 
     headline = ("@tbl " + table_name)
@@ -1245,8 +1238,8 @@ def export_table4(self, c, p, col_nums, col_names, col_types, blob_col):
     col_hlines = []
     row_hlines = []
     
-    db_filename = c.__['db_filename']
-    table_name = c.__['table_name']
+    db_filename = c._leo4sqlite['db_filename']
+    table_name = c._leo4sqlite['table_name']
     
     g.es("\nexporting table: " + table_name + "\n\n(layout 4)\n") 
     headline = ("@tbl " + table_name)
@@ -1320,7 +1313,7 @@ def sqlite_import_table(event):
     c = event.get('c')
     
     action = "import table"
-    c.__['action'] =  action
+    c._leo4sqlite['action'] =  action
     
     InputDialogs(c)
 #@+node:tscv11.20180119175627.39: *3* @g.command('sqlite-export-table')
@@ -1330,7 +1323,7 @@ def sqlite_export_table(event):
     c = event.get('c')
     
     action = "export table"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
 #@+node:tscv11.20180119175627.40: *3* @g.command('sqlite-insert-blob')
@@ -1340,7 +1333,7 @@ def sqlite_insert_blob(event):
     c = event.get('c')
     
     action = "insert blob"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
     
@@ -1351,7 +1344,7 @@ def sqlite_extract_blob(event):
     c = event.get('c')
     
     action = "extract blob"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
     
@@ -1362,7 +1355,7 @@ def sqlite_open_blob(event):
     c = event.get('c')
     
     action = "open blob"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
     
@@ -1373,7 +1366,7 @@ def sqlite_view_blob(event):
     c = event.get('c')
     
     action = "view blob"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
     
@@ -1384,7 +1377,7 @@ def sqlite_edit_blob(event):
     c = event.get('c')
     
     action = "edit blob"
-    c.__['action'] = action
+    c._leo4sqlite['action'] = action
     
     InputDialogs(c)
     

@@ -9,6 +9,7 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
+<v t="tscv11.20180119175627.13"><vh>@@get_settings</vh></v>
 <v t="tscv11.20180119230254.1"><vh>@settings</vh>
 <v t="tscv11.20180119230254.2"><vh>@data free-layout-layout</vh></v>
 <v t="tscv11.20180119225939.1"><vh>bookmarks</vh>
@@ -16,8 +17,7 @@
 </v>
 </v>
 <v t="tscv11.20180119175627.1"><vh>Sqlite3</vh>
-<v t="tscv11.20180120122020.1"><vh>Sqlite3</vh></v>
-<v t="tscv11.20180119175627.2" a="E" descendentVnodeUnknownAttributes="7d710058010000003071017d7102580b0000005f5f626f6f6b6d61726b7371037d7104580700000069735f6475706571054930300a7373732e"
+<v t="tscv11.20180119175627.2" descendentVnodeUnknownAttributes="7d710058010000003071017d7102580b0000005f5f626f6f6b6d61726b7371037d7104580700000069735f6475706571054930300a7373732e"
 expanded="tscv11.20180119175627.10,"><vh>@file leo4sqlite.py</vh></v>
 </v>
 </vnodes>
@@ -37,6 +37,10 @@ expanded="tscv11.20180119175627.10,"><vh>@file leo4sqlite.py</vh></v>
 **Issues**
 
  | 1. If the user cancels the file selection dialog after using the command: 'sqlite-import-table' they are still asked to enter a table name before script execution stops. This is an unwanted artifact that I intend to remove.
+
+ | 2. Error handling
+ 
+ | 3. Data types - column affinity, manifest type, storage type
 
 **Ideas**
     
@@ -65,6 +69,23 @@ expanded="tscv11.20180119175627.10,"><vh>@file leo4sqlite.py</vh></v>
  |
  
 I want to make this the best plugin I can rather than rushing to finish it. Leo deserves no less! Please provide any feedback you can, and don't hesitate to suggest improvements! :-)</t>
+<t tx="tscv11.20180119175627.13" __bookmarks="7d7100580700000069735f6475706571014930300a732e">@
+def get_settings(self, c):
+
+    p_lst = c.find_h(r'@directory.*\\leo4sqlite-output')
+    c.selectPosition(p_lst[0])
+    nd_str = str(p_lst[0])
+    folder = re.sub(r'^&lt;pos.*@directory\s\"', '', nd_str)
+    folder = folder[:-2]
+    c._leo4sqlite['sqlite_out_dir'] = folder
+    
+    p_lst = c.find_h(r'@directory.*\\leo4sqlite-temp')
+    c.selectPosition(p_lst[0])
+    nd_str = str(p_lst[0])
+    folder = re.sub(r'^&lt;pos.*@directory\s\"', '', nd_str)
+    folder = folder[:-2]
+    c._leo4sqlite['sqlite_temp_dir'] = folder
+    </t>
 <t tx="tscv11.20180119225939.1"></t>
 <t tx="tscv11.20180119230108.1" __bookmarks="7d7100580700000069735f6475706571014930300a732e">#Sqlite3:1</t>
 <t tx="tscv11.20180119230254.1"># this is just for the layout while working on the script and can be deleted or ignored.</t>
@@ -91,6 +112,5 @@ I want to make this the best plugin I can rather than rushing to finish it. Leo 
         }
     ]
 }</t>
-<t tx="tscv11.20180120122020.1" __bookmarks="7d7100580700000069735f6475706571014930300a732e">#Sqlite3:1</t>
 </tnodes>
 </leo_file>

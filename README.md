@@ -6,14 +6,7 @@
  sporting \
  a massive archive of useful plugins.*
 
-**TODO**: (contributions welcome)
-
-1. Separate @db3 and @tbl node creation code from the table import/export code.
-2. Add setting: when closing the render pane after viewing a blob, auto-delete
-physical files?
-3. Move the leo4sqlite @settings nodes to myLeoSettings.leo (and update the code).
-4. Add pretty icon(s) to the upper left corner of all dialog windows :-)
-5. Add setting: when viewing blob, auto-zoom?
+**See 'Issues' page for TODO list**: (contributions welcome)
 
 Regards,
 

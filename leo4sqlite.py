@@ -6,7 +6,7 @@
 #@@nocolor
 ''' **leo4sqlite v0.20** - by tscv11
  |
-self.setStyleSheet("padding 3px; background: white")
+
 *Introduction:*
 
 | The script 'leo4sqlite.py' is a Leo-specific python script that provides basic import/export
@@ -32,6 +32,19 @@ self.setStyleSheet("padding 3px; background: white")
 | store additional information related to the blob (which will precede it in the table).
 |
 
+*Settings*
+
+| You will need to create three @settings nodes, to be kept in your local @settings tree or
+| in myLeoSettings.leo. You may keep them under a separate node: 'leo4sqlite' within the
+| @settings tree for better organization.
+
+| a) @string sqlite_output_dir = <any_path> : This is where *extracted* blobs will go. 
+| b) @string sqlite_temp_dir = <any_path> : temporarily extracted blob files for go here.
+|      This is used when *viewing* blobs.
+
+| @data external tools - enter full paths to other programs you'd like to use with blobs.
+|   This node uses a simple one tool/one line format.
+ 
 *Development Status:*
 
 | *This script is functional but still needs plenty of bug-fixing and fine-tuning.*

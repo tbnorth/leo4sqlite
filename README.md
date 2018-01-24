@@ -6,7 +6,7 @@
  sporting \
  a massive archive of useful plugins.*
 
-**See 'Issues' page for TODO list**: (contributions welcome)
+**See the 'Issues' page for Bugs and TODOs**: (contributions welcome)
 
 Regards,
 

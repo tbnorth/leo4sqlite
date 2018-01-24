@@ -9,7 +9,6 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="tscv11.20180119175627.13"><vh>@@get_settings</vh></v>
 <v t="tscv11.20180119230254.1"><vh>@settings</vh>
 <v t="tscv11.20180119230254.2"><vh>@data free-layout-layout</vh></v>
 <v t="tscv11.20180119225939.1"><vh>bookmarks</vh>

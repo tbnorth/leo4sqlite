@@ -1,5 +1,5 @@
 #@+leo-ver=5-thin
-#@+node:tscv11.20180119175627.2: * @file ~/Desktop/leo4sqlite/leo4sqlite.py
+#@+node:tscv11.20180119175627.2: * @file ~/Desktop/leo-editor/leo/plugins/leo4sqlite.py
 #@@color
 #@+<< docstring >>
 #@+node:tscv11.20180119175627.3: ** << docstring >>
@@ -202,6 +202,8 @@ class Leo4SQLiteController:
 class NoInternalDBsError(Exception): pass
 #@+node:tscv11.20180125130031.1: ** class UserCancel
 class UserCancel(Exception): pass
+#@+node:tscv11.20180126102707.1: ** class NodeExists
+class NodeExists(Exception): pass
 #@+node:tscv11.20180119175627.10: ** class InputDialogs
 class InputDialogs(QWidget):
 
@@ -220,11 +222,15 @@ class InputDialogs(QWidget):
             self.initUI(c)
 
         except UserCancel:
-            g.es("\nleo4sqlite plugin: DB ACTION CANCELLED BY USER")  
+            g.es("\nleo4sqlite plugin: DB action cancelled by user.\n")  
             return
             
         except NoInternalDBsError:
-            g.es("\nleo4sqlite plugin: NO INTERNAL DATABASE(S) PRESENT")
+            g.es("\nleo4sqlite plugin: No Internal Database(s) present.\n")
+            return
+
+        except NodeExists:
+            g.es("\nleo4sqlite plugin: Node exists: open the render pane to view it.\n")
             return
     #@+node:tscv11.20180119175627.12: *3* initUI
     def initUI(self, c):
@@ -292,8 +298,7 @@ class InputDialogs(QWidget):
         
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");   
+        self.setStyleSheet('padding: 3px; background: white');
         db_fname, _ = QFileDialog.getOpenFileName(self,"select an external database:", "","sqlite files (*.db *.db3 *.sqlite *.sqlite3);;all files (*.*)", options=options) # tnb
         if db_fname == '':
             raise UserCancel()
@@ -324,14 +329,13 @@ class InputDialogs(QWidget):
                 new_db3_clean = get_filename(new_db3)
                 new_db3_cleans.append(new_db3_clean)
 
-            QInputDialog.setStyleSheet(self, "padding: 3px");
-            QInputDialog.setStyleSheet(self, "background: white");
+            self.setStyleSheet('padding: 3px; background: white');
             item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose internal database: ", new_db3_lst, 0, False)
             c._leo4sqlite['db_filename'] = item
         else:
             raise NoInternalDBsError()
             return
-            # c._leo4sqlite['db_filename'] = item
+
 
     #@+node:tscv11.20180119175627.17: *3* select_table
     def select_table(self, c):
@@ -348,8 +352,7 @@ class InputDialogs(QWidget):
             tbl_nm_str += "\"" + name[0] + "\", "
         tbl_nm_str = tbl_nm_str[:-3] + "\""
 
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select a table: ", tbl_names, 0, False)    
         if not okPressed:
                 raise UserCancel()
@@ -433,8 +436,7 @@ class InputDialogs(QWidget):
                     
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         blob_filepath, _ = QFileDialog.getOpenFileName(self,"select file to insert:", "","binary files (*)", options=options)
         
         full_filename = os.path.basename(blob_filepath)
@@ -469,16 +471,13 @@ class InputDialogs(QWidget):
         db_filename = c._leo4sqlite['db_filename']
 
         items = (col_names)
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column to search:", items, 0, False)
         
         search_col = item
         
-        items = []
-        
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        items = []    
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose a search term:", items, 0, False)
         
         search_term = item
@@ -492,19 +491,17 @@ class InputDialogs(QWidget):
                 search_items.append(row[i])
         
         cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term]) # tnb
-    #    cursor.execute("select * from " + table_name + " where " + search_col + " = " + search_term) # tsc
         row = cursor.fetchone()
         filename = os.path.basename(row[file_col])
         extension = row[ext_col]
         
-        sqlite_out_dir = c.config.getString("sqlite_out_dir") # c._leo4sqlite['sqlite_out_dir'] # tsc
+        sqlite_out_dir = c.config.getString("sqlite_output_dir")
         sqlite_out_dir = sqlite_out_dir[1:-1]
         
         filepath = sqlite_out_dir + '\\' + filename + extension
         
         with open(filepath, "wb") as output_file:   
             cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term]) # tnb
-    #        cursor.execute("select * from " + table_name + " where " + search_col + " = " + search_term) # tsc
             ablob = cursor.fetchone()
             output_file.write(ablob[blob_col])
             cursor.close()
@@ -534,19 +531,16 @@ class InputDialogs(QWidget):
         c.redraw()
         
         items = (col_names)
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column to search:", items, 0, False)
         search_col = item
         
         items = []
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose a search term:", items, 0, False)
         search_term = item
                               
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select external tool:", tools, 0, False)
         ext_tool = item
         
@@ -594,21 +588,16 @@ class InputDialogs(QWidget):
             return filename    
             
         items = col_names
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         col, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column to search:", items, 0, False)
         search_col = col
         
         items = []
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         term, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose a search term:", items, 0, False)
         search_term = term
         
-        #blob_file = "" # pyf
         ablob = []
-        #blob_col = 0 # tsc
-        #blob_nm_lst = [] # pyf
         
         conn = sqlite3.connect(db_filename)
         cursor = conn.cursor()
@@ -626,20 +615,24 @@ class InputDialogs(QWidget):
             output_file.write(ablob[blob_col])
             cursor.close()
             
+            if extension in img_types: 
+                ph2b =  (r"@image " + filename + extension)
+            if extension in vid_types:
+                ph2b =  (r"@movie " + filename + extension)
+                
             p = g.findNodeAnywhere(c, "temp")
             c.selectPosition(p)
+            
+            for child in p.children():
+                if child.h == ph2b:
+                    c.selectPosition(child)
+                    raise NodeExists()
+                    return
+            
             p = p.insertAsLastChild() # tsc - add option: insert as firstChild
             c.selectPosition(p)
+            p.h = ph2b
             p.b = filepath
-        
-            if extension in img_types: 
-                p.h =  (r"@image " + filename + extension)
-            if extension in vid_types:
-                p.h =  (r"@movie " + filename + extension)
-                
-            p = c.p
-            c.selectPosition(p)
-            c.redraw()
             
             c.executeMinibufferCommand('vr-show')
             c.redraw()
@@ -657,22 +650,19 @@ class InputDialogs(QWidget):
         
         names = []
 
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");    
+        self.setStyleSheet('padding: 3px; background: white');
         name, okPressed = QInputDialog.getItem(self, "leo4sqlite","enter blob name:", names, 0, False)
         blob_name = name
         
         cols = (col_names)
 
-        QInputDialog.setStyleSheet(self, "padding: 3px");
-        QInputDialog.setStyleSheet(self, "background: white");    
+        self.setStyleSheet('padding: 3px; background: white');
         col, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column name:", cols, 0, False)
         edit_col = col
         
         values = []
         
-        QInputDialog.setStyleSheet(self, "padding 3px");
-        QInputDialog.setStyleSheet(self, "background: white");
+        self.setStyleSheet('padding: 3px; background: white');
         value, okPressed = QInputDialog.getItem(self, "leo4sqlite", "enter new value:", values, 0, False)
         new_val = value
         
@@ -691,8 +681,7 @@ class InputDialogs(QWidget):
         
         if action == 'import table':
             items = ('one', 'two', 'three', 'four')
-            QInputDialog.setStyleSheet(self, "padding: 3px");
-            QInputDialog.setStyleSheet(self, "background: white");
+            self.setStyleSheet('padding: 3px; background: white');
             item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose a layout: ", items, 0, False)
             if not okPressed:
                 raise UserCancel()

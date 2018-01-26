@@ -226,11 +226,11 @@ class InputDialogs(QWidget):
             return
             
         except NoInternalDBsError:
-            g.es("\nleo4sqlite plugin: No Internal Database(s) present.\n")
+            g.es("\nleo4sqlite plugin: No internal database(s) present.\n")
             return
 
         except NodeExists:
-            g.es("\nleo4sqlite plugin: Node exists: open the render pane to view it.\n")
+            g.es("\nleo4sqlite plugin: Node already exists.\n")
             return
     #@+node:tscv11.20180119175627.12: *3* initUI
     def initUI(self, c):
@@ -626,6 +626,7 @@ class InputDialogs(QWidget):
             for child in p.children():
                 if child.h == ph2b:
                     c.selectPosition(child)
+                    c.executeMinibufferCommand('vr-show')
                     raise NodeExists()
                     return
             

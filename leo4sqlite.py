@@ -1,5 +1,5 @@
 #@+leo-ver=5-thin
-#@+node:tscv11.20180119175627.2: * @file ~/Desktop/leo-editor/leo/plugins/leo4sqlite.py
+#@+node:tscv11.20180119175627.2: * @file leo4sqlite.py
 #@@color
 #@+<< docstring >>
 #@+node:tscv11.20180119175627.3: ** << docstring >>
@@ -199,7 +199,7 @@ class InputDialogs(QWidget):
     def __init__(self, c):
         super().__init__()
         self.title = 'leo4sqlite'
-        self.setWindowIcon(QtGui.QIcon(r'leo/Icons/application-x-leo-outline.png'))
+        self.setWindowIcon(QtGui.QIcon(r'C:\Users\TSC\Desktop\leo-editor\leo\Icons\application-x-leo-outline.png'))
         self.left = 10
         self.top = 10
         self.width = 640

@@ -116,6 +116,20 @@
 | *external tool.*
 |
 
+**sqlite-clear-data**
+
+This command removes all children of the 'data' node, where all imports
+appear. Use caution!
+
+
+**sqlite-purge-view**
+
+This command removes all children of the 'temp' node (used for viewing
+blobs temporarily). It **also** deletes *all* physical files from the
+'leo4sqlite-temp' directory.
+
+|
+
 contact: tsc.v1.1@gmail.com
 '''
 #@-<< docstring >>

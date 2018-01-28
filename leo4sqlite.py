@@ -5,8 +5,9 @@
 #@+node:tscv11.20180119175627.3: ** << docstring >>
 #@@nocolor
 ''' **leo4sqlite v0.20** - by tscv11
- |
-self.setStyleSheet("padding 3px; background: white")
+
+|
+
 *Introduction:*
 
 | The script 'leo4sqlite.py' is a Leo-specific python script that provides basic import/export
@@ -45,9 +46,8 @@ self.setStyleSheet("padding 3px; background: white")
  | sqlite-view-blob
  | sqlite-insert-blob
  | sqlite-extract-blob
- | sqlite-reset-temp
  | sqlite-clear-data
- | sqlite-purge-files
+ | sqlite-purge-view
  |
 
 **How to import a table:**
@@ -145,12 +145,14 @@ __version__ = '0.020'
 #  
 #  v.024 - the 'get external database' dialog now has two improved options: 1) all files   or   2) .db .db3 .sqlite .sqlite3
 #  
+#  v.026 - Added basic error handling
 #  
 #@-<< version history >>
 #@+<< imports >>
 #@+node:tscv11.20180119175627.5: ** << imports >>
 import leo.core.leoGlobals as g
 
+import glob
 import sys
 import os
 import re
@@ -159,11 +161,20 @@ import subprocess
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QDesktopWidget
 #@-<< imports >>
+
+from leo.plugins.viewrendered import ViewRenderedController
+
+realHideEvent = ViewRenderedController.hideEvent
+def myHideEvent(self, event):
+    g.es("VR pane hidden")
+    realHideEvent(self, event)
+ViewRenderedController.hideEvent = myHideEvent
+
 #@+others
 #@+node:tscv11.20180119175627.6: ** onCreate
 def onCreate (tag, keys):
@@ -172,7 +183,7 @@ def onCreate (tag, keys):
     c._leo4sqlite = {}
 #@+node:tscv11.20180119175627.7: ** init
 def init ():
-        
+
     ok = g.app.gui.guiName() in ('qt','qttabs')
     if ok:
         if 1: # Create the commander class *before* the frame is created.
@@ -198,8 +209,14 @@ class Leo4SQLiteController:
         return ok
 
     #@-others
-#@+node:tscv11.20180125141240.1: ** class DbError
+#@+node:tscv11.20180126194421.1: ** class Sqlite3DatabaseError
+class Sqlite3DatabaseError(Exception): pass
+#@+node:tscv11.20180125141240.1: ** class NoInternalDBsError
 class NoInternalDBsError(Exception): pass
+#@+node:tscv11.20180127173942.1: ** class NoOutputDirectory
+class NoOutputDirectory(Exception): pass
+#@+node:tscv11.20180127172812.1: ** class NoTempDirectory
+class NoTempDirectory(Exception): pass
 #@+node:tscv11.20180125130031.1: ** class UserCancel
 class UserCancel(Exception): pass
 #@+node:tscv11.20180126102707.1: ** class NodeExists
@@ -232,6 +249,15 @@ class InputDialogs(QWidget):
         except NodeExists:
             g.es("\nleo4sqlite plugin: Node already exists.\n")
             return
+
+        except Sqlite3DatabaseError:
+            g.es("\nleo4sqlite plugin: File is encrypted or is not a database.\n")
+            
+        except NoTempDirectory:
+            g.es("\nleo4sqlite plugin: No temp directory specified in settings.\n")
+            
+        except NoOutputDirectory:
+            g.es("\nleo4sqlite plugin: No output directory specified in settings.\n")
     #@+node:tscv11.20180119175627.12: *3* initUI
     def initUI(self, c):
         self.setWindowTitle(self.title)
@@ -470,6 +496,14 @@ class InputDialogs(QWidget):
         table_name = c._leo4sqlite['table_name']
         db_filename = c._leo4sqlite['db_filename']
 
+        sqlite_out_dir = c.config.getString("sqlite_output_dir")
+        
+        if not sqlite_out_dir:
+            raise NoOutputDirectory
+            return
+        
+        sqlite_out_dir = sqlite_out_dir[1:-1]
+        
         items = (col_names)
         self.setStyleSheet('padding: 3px; background: white');
         item, okPressed = QInputDialog.getItem(self, "leo4sqlite","select column to search:", items, 0, False)
@@ -495,8 +529,6 @@ class InputDialogs(QWidget):
         filename = os.path.basename(row[file_col])
         extension = row[ext_col]
         
-        sqlite_out_dir = c.config.getString("sqlite_output_dir")
-        sqlite_out_dir = sqlite_out_dir[1:-1]
         
         filepath = sqlite_out_dir + '\\' + filename + extension
         
@@ -520,7 +552,12 @@ class InputDialogs(QWidget):
         table_name = c._leo4sqlite['table_name']
         db_filename = c._leo4sqlite['db_filename']
         
-        sqlite_temp_dir = c.config.getString('sqlite_temp_dir') # c._leo4sqlite['sqlite_temp_dir'] # tnb
+        sqlite_temp_dir = c.config.getString('sqlite_temp_dir')
+        
+        if not sqlite_temp_dir:
+            raise NoTempDirectory
+            return
+        
         sqlite_temp_dir = sqlite_temp_dir[1:-1]
         
         p = g.findNodeAnywhere(c, '@data external tools')
@@ -577,6 +614,10 @@ class InputDialogs(QWidget):
         db_filename = c._leo4sqlite['db_filename']
         
         temp_dir = c.config.getString("sqlite_temp_dir")
+        if not temp_dir:
+            raise NoTempDirectory
+            return
+            
         temp_dir = temp_dir[1:-1]
         
         def get_extension(path):
@@ -1433,20 +1474,6 @@ def sqlite_edit_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.45: *3* @g.command('sqlite-reset-temp')
-@g.command('sqlite-reset-temp')
-def sqlite_reset_temp(event):
-    
-    c = event.get('c')
-
-    p = g.findNodeAnywhere(c, 'temp')
-    
-    if p:
-        c.selectPosition(p)
-        p.deleteAllChildren()
-        c.redraw()
-    else:
-        pass
 #@+node:tscv11.20180119175627.46: *3* @g.command('sqlite-clear-data')
 @g.command('sqlite-clear-data')
 def sqlite_clear_data(event):
@@ -1461,27 +1488,31 @@ def sqlite_clear_data(event):
     c.selectPosition(p)
     p.h = "data"
     c.redraw()
-#@+node:tscv11.20180119175627.47: *3* @g.command('sqite-purge-files')
-@g.command('sqlite-purge-files')
-def sqlite_purge_files(event):
-    
-    import os
-    import re
-    import glob
+#@+node:tscv11.20180119175627.47: *3* @g.command('sqlite-purge-view')
+@g.command('sqlite-purge-view')
+def sqlite_purge_view(event):
     
     c = event.get('c')
+ 
+    from leo.core.leoQt import QtWidgets
+    
+    vr = c.frame.top.findChild(QtWidgets.QWidget, 'viewrendered_pane')
+    if vr:
+        w = vr.ensure_text_widget()
+        vr.set_html("Inactive view pane", w)
+        vr.deatctivate()
     
     c.executeMinibufferCommand('vr-hide')
     
-    p_lst = c.find_h(r'@directory.*\\leo4sqlite-temp')
-    c.selectPosition(p_lst[0])
+    p = g.findNodeAnywhere(c, 'temp')
+    c.selectPosition(p)
+    p.deleteAllChildren()
+    c.redraw()
     
-    nd_str = str(p_lst[0])
+    sqlite_temp_dir = c.config.getString("sqlite_temp_dir")
+    sqlite_temp_dir = sqlite_temp_dir[1:-1]
     
-    folder = re.sub(r'^<pos.*@directory\s\"', '', nd_str)
-    folder = folder[:-2]
-    
-    os.chdir(folder)
+    os.chdir(sqlite_temp_dir)
     files=glob.glob('*')
     if files:
         for filename in files:

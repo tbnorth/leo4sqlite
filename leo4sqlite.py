@@ -273,7 +273,7 @@ class InputDialogs(QWidget):
             self.select_table(c)
             self.get_blob_col(c)
             self.get_layout(c)
-            # self.make_nodes(c) # split @tbl and @db3 node creation from table import/export code # tsc
+            #self.make_nodes(c) # split @tbl and @db3 node creation from table import/export code # tsc
             self.grand_central(c)
 
         if c._leo4sqlite['action'] == 'export table':
@@ -476,7 +476,7 @@ class InputDialogs(QWidget):
             cursor.execute("insert into " + table_name + " values {} ".format(plh), cells)
             conn.commit()
             
-            g.es("done")
+            g.es("\ndone\n")
     #@+node:tscv11.20180119175627.20: *3* extract_blob
     def extract_blob(self, c):
         
@@ -533,7 +533,7 @@ class InputDialogs(QWidget):
             cursor.close()
         
         conn.close()
-        g.es("done")
+        g.es("\ndone\n")
     #@+node:tscv11.20180119175627.21: *3* open_blob
     def open_blob(self, c):
         
@@ -745,22 +745,23 @@ class InputDialogs(QWidget):
         layout = c._leo4sqlite['layout']
         
         if c._leo4sqlite['action'] != 'export table':
-            
             db3_h = "@db3 " + str(db_filename)
             p = g.findNodeAnywhere(c, db3_h)
-            if p:
-                pass
-            else:    
-                p = c.lastTopLevel().insertAsNthChild(1)
-                c.selectPosition(p)
-                p.h = "@db3 " + str(db_filename)
-                c.redraw(p)
-            
-                p = p.insertAsNthChild(1)
-                c.selectPosition(p)
-                p.h = "@tbl " + str(c._leo4sqlite['table_name'])
-                c.redraw(p)
-            
+        
+        if p:
+            pass
+        
+        else:    
+            p = c.lastTopLevel().insertAfter()
+            c.selectPosition(p)
+            p.h = "@db3 " + str(db_filename)
+            c.redraw(p)
+        
+            p = p.insertAsNthChild(1)
+            c.selectPosition(p)
+            p.h = "@tbl " + str(c._leo4sqlite['table_name'])
+            c.redraw(p)
+        
         if c._leo4sqlite['action'] == 'import table':
             if layout == "one":
                 import_table1(self, c, col_nums, col_names, col_types, blob_col, p)
@@ -791,7 +792,6 @@ class InputDialogs(QWidget):
             if c._leo4sqlite['layout'] == "four":
                 export_table4(self, c, p, col_nums, col_names, col_types, blob_col)
     #@+node:tscv11.20180124174517.1: *4* make_nodes
-    # attempt to split grand_central
     #@+at
     # def make_nodes(self, c):
     #     
@@ -812,7 +812,7 @@ class InputDialogs(QWidget):
     #         c.selectPosition(p)
     #         c.redraw(p)
     #         
-    #         return p
+    #         #return p
     #@-others
 #@+node:tsc.20180130234230.1: ** class Leo4SqliteError
 class Leo4SqliteError(Exception): pass
@@ -927,13 +927,15 @@ def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
         idx = idx + 1  
         if idx == 1:
             p = p.insertAsNthChild(1)
+            c.selectPosition(p)
         else:
             p = p.insertAfter()
+            c.selectPosition(p)
 
         delim = ","
         new_row = ""
-        rx = rx + 1
         
+        rx = rx + 1
         if row != "":
             cols = re.split(delim, str(row))
             for col in cols:
@@ -942,7 +944,7 @@ def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
             final_row = re.sub(r',', ", ", str(new_row))
         p.h = str(final_row[1:-3])
     
-    g.es("done\n")
+    g.es("\ndone\n")
     c.redraw()        
     headline = ("@tbl " + table_name)
     tbl_node = g.findNodeAnywhere(c, (headline))
@@ -1523,10 +1525,12 @@ def sqlite_delete_data(event):
     
     c = event.get('c')
     
-    p = c.lastTopLevel()
-    c.selectPosition(p)
-    p.doDelete()
-    c.redraw()
+    p_lst = c.find_h('data')
+    
+    if p_lst[0]:
+        c.selectPosition(p_lst[0])
+        p_lst[0].doDelete()
+        
     p = c.lastTopLevel().insertAfter()
     c.selectPosition(p)
     p.h = "data"

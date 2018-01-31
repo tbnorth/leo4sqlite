@@ -4,7 +4,7 @@
 #@+<< docstring >>
 #@+node:tscv11.20180119175627.3: ** << docstring >>
 #@@nocolor
-''' **leo4sqlite v0.20** - by tscv11
+''' **leo4sqlite v0.31** - by tscv11
 
 |
 
@@ -20,7 +20,7 @@
 
 | Imported tables appear as children of the "data" node (the last top-level
 | node). To clear this node of accumulated imports, use the command
-| 'sqlite-clear-data'.
+| 'sqlite-delete-data'.
 
 | I am considering database level import/export functions to round things
 | out if  there's enough interest.
@@ -41,15 +41,16 @@
 |
 
 **The commands currently added by the plugin are:**
-
+ |
  | sqlite-import-table
  | sqlite-export-table
- | sqlite-open-blob
- | sqlite-view-blob
  | sqlite-insert-blob
  | sqlite-extract-blob
- | sqlite-clear-data
- | sqlite-purge-view
+ | sqlite-view-blob
+ | sqlite-open-blob
+ | sqlite-clear-temp
+ | sqlite-delete-data
+ | sqlite-purge-files
  |
 
 **How to import a table:**
@@ -118,19 +119,23 @@
 | *external tool.*
 |
 
-**sqlite-clear-data**
+**sqlite-clear-temp**
+
+| To remove all temporary blob nodes from the temp node use this command.
+| This leaves the files intact.
+
+
+**sqlite-delete-data**
 
 | This command removes all children of the 'data' node, where all imports
 | appear. Use caution!
 
 
-**sqlite-purge-view**
+**sqlite-purge-files**
 
-| This command removes all children of the 'temp' node (used for viewing
-| blobs temporarily). It **also** deletes *all* physical files from the
-| 'leo4sqlite-temp' directory.
-
+| This command deletes *all* physical files from the 'leo4sqlite-temp' directory.
 |
+
 
 **Settings**
 
@@ -146,8 +151,9 @@
 | And finally,
 
 | @data external tools - this node holds paths to external tools for use when
-| opening blobs. The format is simply one full path per line.
-
+| opening blobs. The format is simply one full path per line, ending in the name
+| of an executable.
+|
 |
 
 contact: tsc.v1.1@gmail.com
@@ -470,7 +476,7 @@ class InputDialogs(QWidget):
             cursor.execute("insert into " + table_name + " values {} ".format(plh), cells)
             conn.commit()
             
-            print("done")
+            g.es("done")
     #@+node:tscv11.20180119175627.20: *3* extract_blob
     def extract_blob(self, c):
         
@@ -518,7 +524,7 @@ class InputDialogs(QWidget):
         extension = row[ext_col]
         
         
-        filepath = sqlite_out_dir + '\\' + filename + extension
+        filepath = sqlite_out_dir + '/' + filename + extension
         
         with open(filepath, "wb") as output_file:   
             cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term]) # tnb
@@ -578,7 +584,7 @@ class InputDialogs(QWidget):
         filename = os.path.basename(filename)
         extension = row[ext_col]
 
-        filepath = (sqlite_temp_dir + '\\' + filename + extension)
+        filepath = (sqlite_temp_dir + '//' + filename + extension)
 
         with open(filepath, "wb") as output_file:        
             cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term])
@@ -636,7 +642,7 @@ class InputDialogs(QWidget):
         filename = row[file_col]
         extension = row[ext_col]
 
-        filepath = temp_dir + "\\" + filename + extension
+        filepath = temp_dir + "//" + filename + extension
 
         with open(filepath, "wb") as output_file:               
             cursor.execute("select * from %s where %s = ?" % (table_name, search_col), [search_term]) 
@@ -1498,9 +1504,22 @@ def sqlite_edit_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.46: *3* @g.command('sqlite-clear-data')
-@g.command('sqlite-clear-data')
-def sqlite_clear_data(event):
+#@+node:tsc.20180131045323.1: *3* @g.command('sqlite-clear-temp')
+@g.command('sqlite-clear-temp')
+def sqlite_clear_temp(event):
+    
+    c = event.get('c')
+
+    p = g.findNodeAnywhere(c, 'temp')
+    if p:
+        c.selectPosition(p)
+        p.deleteAllChildren()
+        c.redraw()
+    else:
+        pass
+#@+node:tscv11.20180119175627.46: *3* @g.command('sqlite-delete-data')
+@g.command('sqlite-delete-data')
+def sqlite_delete_data(event):
     
     c = event.get('c')
     
@@ -1512,21 +1531,11 @@ def sqlite_clear_data(event):
     c.selectPosition(p)
     p.h = "data"
     c.redraw()
-#@+node:tscv11.20180119175627.47: *3* @g.command('sqlite-purge-view')
-@g.command('sqlite-purge-view')
-def sqlite_purge_view(event):
+#@+node:tscv11.20180119175627.47: *3* @g.command('sqlite-purge-files')
+@g.command('sqlite-purge-files')
+def sqlite_purge_files(event):
     
     c = event.get('c')
- 
-    from leo.core.leoQt import QtWidgets
-    
-    vr = c.frame.top.findChild(QtWidgets.QWidget, 'viewrendered_pane')
-    if vr:
-        w = vr.ensure_text_widget()
-        vr.set_html("Inactive view pane", w)
-        vr.deatctivate()
-    
-    c.executeMinibufferCommand('vr-hide')
     
     p = g.findNodeAnywhere(c, 'temp')
     c.selectPosition(p)

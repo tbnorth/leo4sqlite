@@ -161,25 +161,31 @@ __version__ = '0.020'
 #@+at
 # version history
 # 
-# leo4sqlite.py
+# *leo4sqlite.py*
 # 
-#  v.010 - first working version of plugin.
+#  **v.010** - first working version of plugin.
 # 
-#  v.011 - the import layout is now saved in the @tbl node so the export layout can be chosen automatically.
+#  **v.011** - the import layout is now saved in the @tbl node so the export layout can be chosen automatically.
 # 
-#  v.015 - added 'sqlite-clear-data', 'sqlite-reset-temp', and 'sqlite-purge-files'.
+#  **v.015** - added 'sqlite-clear-data', 'sqlite-reset-temp', and 'sqlite-purge-files'.
 # 
-#  v.016 - fixed a bug in 'sqlite-extract-table', thanks to Terry Brown.
+#  **v.016** - fixed a bug in 'sqlite-extract-table', thanks to Terry Brown.
 # 
-#  v.020 - added command 'sqlite-edit-blob', which enables the user to edit indvidual text columns for a 'blob'.
+#  **v.020** - added command 'sqlite-edit-blob', which enables the user to edit indvidual text columns for a 'blob'.
 # 
-#  v.022 - various small fixes and enhancements suggested by Terry Brown
+#  **v.022** - various small fixes and enhancements suggested by Terry Brown
 #  
-#  v.023 - dialogs now have the standard Leo icon in the upper-left hand corner.
+#  **v.023** - dialogs now have the standard Leo icon in the upper-left hand corner.
 #  
-#  v.024 - the 'get external database' dialog now has two improved options: 1) all files   or   2) .db .db3 .sqlite .sqlite3
+#  **v.024** - the 'get external database' dialog now has two improved options: 1) all files   or   2) .db .db3 .sqlite .sqlite3
 #  
-#  v.026 - Added basic error handling
+#  **v.026** - added basic error handling
+#  
+#  **v.029** - added settings to auto-delete temporary blob files on exiting Leo and updated the documentation.
+#  
+#  **v.030** - removed the unused Leo4SQLiteController node.
+# 
+#  **v.031** - subclassed custom exceptions instead of creating a separate class for each error.
 #  
 #@-<< version history >>
 #@+<< imports >>
@@ -220,53 +226,6 @@ def init ():
         g.plugin_signon(__name__)       
     return ok
 
-#@+node:tsc.20180130145507.1: ** delBlobs
-def delBlobs(c): 
-    
-    del_blobs_on_exit = c.config.getBool('del_blobs_on_exit')
-    
-    if del_blobs_on_exit == 1:
-        sqlite_temp_dir = c.config.getString('sqlite_temp_dir') 
-        sqlite_temp_dir = sqlite_temp_dir[1:-1]
-            
-        os.chdir(sqlite_temp_dir)
-        files=glob.glob('*')
-        if files:
-            for filename in files:
-                os.unlink(filename)
-#@+node:tscv11.20180119175627.8: ** class Leo4SQLiteController
-class Leo4SQLiteController:
-    
-    #@+others
-    #@+node:tscv11.20180119175627.9: *3* init
-    def init (self, c):
-        
-        ok = g.app.gui.guiName() in ('qt','qttabs')
-        if ok:
-            if 1: # Create the commander class *before* the frame is created.
-                g.registerHandler('before-create-leo-frame',onCreate)
-            else: # Create the commander class *after* the frame is created.
-                g.registerHandler('after-create-leo-frame',onCreate)        
-            g.plugin_signon(__name__)
-        return ok
-    #@-others
-#@+node:tsc.20180130234230.1: ** exceptions
-#@+others
-#@+node:tscv11.20180126194421.1: *3* class Sqlite3DatabaseError
-class Sqlite3DatabaseError(Exception): pass
-#@+node:tscv11.20180125141240.1: *3* class NoInternalDBsError
-class NoInternalDBsError(Exception): pass
-#@+node:tscv11.20180127173942.1: *3* class NoOutputDirectory
-class NoOutputDirectory(Exception): pass
-#@+node:tscv11.20180127172812.1: *3* class NoTempDirectory
-class NoTempDirectory(Exception): pass
-#@+node:tscv11.20180125130031.1: *3* class UserCancel
-class UserCancel(Exception): pass
-#@+node:tscv11.20180126102707.1: *3* class NodeExists
-class NodeExists(Exception): pass
-#@-others
-
-# custom exceptions
 #@+node:tscv11.20180119175627.10: ** class InputDialogs
 class InputDialogs(QWidget):
     
@@ -283,27 +242,9 @@ class InputDialogs(QWidget):
 
         try:
             self.initUI(c)
-
-        except UserCancel:
-            g.es("\nleo4sqlite plugin: DB action cancelled by user.\n")  
+        except Leo4SqliteError as l4serr:
+            g.es("\nleo4sqlite plugin: %s\n" % l4serr.__doc__)  
             return
-            
-        except NoInternalDBsError:
-            g.es("\nleo4sqlite plugin: No internal database(s) present.\n")
-            return
-
-        except NodeExists:
-            g.es("\nleo4sqlite plugin: Node already exists.\n")
-            return
-
-        except Sqlite3DatabaseError:
-            g.es("\nleo4sqlite plugin: File is encrypted or is not a database.\n")
-            
-        except NoTempDirectory:
-            g.es("\nleo4sqlite plugin: No temp directory specified in settings.\n")
-            
-        except NoOutputDirectory:
-            g.es("\nleo4sqlite plugin: No output directory specified in settings.\n")
     #@+node:tscv11.20180119175627.12: *3* initUI
     def initUI(self, c):
         self.setWindowTitle(self.title)
@@ -863,6 +804,40 @@ class InputDialogs(QWidget):
     #         
     #         return p
     #@-others
+#@+node:tsc.20180130234230.1: ** class Leo4SqliteError
+class Leo4SqliteError(Exception): pass
+
+class Sqlite3DatabaseError(Leo4SqliteError):
+    """File is encrypted or is not a database."""
+    
+class NoInternalDBsError(Leo4SqliteError):
+    """No internal database(s) present."""
+
+class NoOutputDirectory(Leo4SqliteError):
+    """No output directory specified in settings."""
+
+class NoTempDirectory(Leo4SqliteError):
+    """No temp directory specified in settings."""
+
+class UserCancel(Leo4SqliteError):
+    """Action cancelled by user."""
+
+class NodeExists(Leo4SqliteError):
+    """Node already exists. New node not created."""
+#@+node:tsc.20180130145507.1: ** delBlobs
+def delBlobs(c): 
+    
+    del_blobs_on_exit = c.config.getBool('del_blobs_on_exit')
+    
+    if del_blobs_on_exit == 1:
+        sqlite_temp_dir = c.config.getString('sqlite_temp_dir') 
+        sqlite_temp_dir = sqlite_temp_dir[1:-1]
+            
+        os.chdir(sqlite_temp_dir)
+        files=glob.glob('*')
+        if files:
+            for filename in files:
+                os.unlink(filename)
 #@+node:tscv11.20180119175627.26: ** imports
 #@+others
 #@+node:tscv11.20180119175627.29: *3* import_table1

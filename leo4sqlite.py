@@ -343,11 +343,12 @@ class InputDialogs(QWidget):
                 new_db3_cleans.append(new_db3_clean)
 
             self.setStyleSheet('padding: 3px; background: white');
-            item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose internal database: ", new_db3_lst, 0, False)
-            c._leo4sqlite['db_filename'] = item
-        else:
-            raise NoInternalDBsError()
-            return
+            item, okPressed = QInputDialog.getItem(self, "leo4sqlite","choose internal database.", new_db3_lst, 0, False)
+            if not okPressed:
+                raise NoInternalDBsError
+                return
+            else:
+                c._leo4sqlite['db_filename'] = item
 
 
     #@+node:tscv11.20180119175627.17: *3* select_table
@@ -737,19 +738,22 @@ class InputDialogs(QWidget):
         blob_col = c._leo4sqlite['blob_col']
         layout = c._leo4sqlite['layout']
         
-        db3_h = "@db3 " + str(db_filename)
-        p = g.findNodeAnywhere(c, db3_h)
-        if p:
-            pass
-        else:    
-            p = c.lastTopLevel().insertAsNthChild(1)
-            p.h = "@db3 " + str(db_filename)
-            c.redraw(p)
-        
-        p = p.insertAsNthChild(1)
-        p.h = "@tbl " + str(c._leo4sqlite['table_name'])
-        c.selectPosition(p)
-        c.redraw(p)
+        if c._leo4sqlite['action'] != 'export table':
+            
+            db3_h = "@db3 " + str(db_filename)
+            p = g.findNodeAnywhere(c, db3_h)
+            if p:
+                pass
+            else:    
+                p = c.lastTopLevel().insertAsNthChild(1)
+                c.selectPosition(p)
+                p.h = "@db3 " + str(db_filename)
+                c.redraw(p)
+            
+                p = p.insertAsNthChild(1)
+                c.selectPosition(p)
+                p.h = "@tbl " + str(c._leo4sqlite['table_name'])
+                c.redraw(p)
             
         if c._leo4sqlite['action'] == 'import table':
             if layout == "one":
@@ -1081,8 +1085,6 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
     g.es("\nexporting table " + table_name + "\n\n(layout 1)\n")
 
     lines = re.split("\n", p.b)
-
-#    db_file_path = lines[0] # pyf
 
     new_names = re.sub(r'[\"\'\[\]\s]', "", str(col_names))
     new_types = re.sub(r'[\"\'\[\]\s]', "", str(col_types))

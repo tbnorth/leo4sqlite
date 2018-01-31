@@ -9,16 +9,36 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="tscv11.20180125192120.1"><vh>@settings</vh>
-<v t="tscv11.20180126132059.1"><vh>@data free-layout-layout</vh></v>
+<v t="tscv11.20180125192120.1" a="E"><vh>@settings</vh>
+<v t="tsc.20180129232027.1"><vh>@data free-layout-layout</vh></v>
 </v>
-<v t="tscv11.20180127104929.1"><vh>RenderPaneHideEvent</vh></v>
 <v t="tscv11.20180119175627.1" a="E"><vh>Sqlite3</vh>
 <v t="tscv11.20180119175627.2" a="E" descendentVnodeUnknownAttributes="7d710058010000003071017d7102580b0000005f5f626f6f6b6d61726b7371037d7104580700000069735f6475706571054930300a7373732e"
-expanded="tscv11.20180119175627.10,"><vh>@file ~/Desktop/leo-editor/leo/plugins/leo4sqlite.py</vh></v>
+expanded="tscv11.20180119175627.8,"><vh>@file /home/tsc/Desktop/leo-editor-master/leo/plugins/leo4sqlite.py</vh></v>
 </v>
 </vnodes>
 <tnodes>
+<t tx="tsc.20180129232027.1">{
+    "content": [
+        "_leo_pane:bodyFrame",
+        {
+            "content": [
+                "_leo_pane:outlineFrame",
+                "_leo_pane:logFrame"
+            ],
+            "orientation": 2,
+            "sizes": [
+                276,
+                274
+            ]
+        }
+    ],
+    "orientation": 1,
+    "sizes": [
+        787,
+        569
+    ]
+}</t>
 <t tx="tscv11.20180119175627.1">@nocolor
 
 **leo4sqlite.py plugin**
@@ -67,64 +87,5 @@ expanded="tscv11.20180119175627.10,"><vh>@file ~/Desktop/leo-editor/leo/plugins/
  
 I want to make this the best plugin I can rather than rushing to finish it. Leo deserves no less! Please provide any feedback you can, and don't hesitate to suggest improvements! :-)</t>
 <t tx="tscv11.20180125192120.1"></t>
-<t tx="tscv11.20180126132059.1">{
-    "content": [
-        "_leo_pane:bodyFrame",
-        {
-            "content": [
-                "_leo_pane:outlineFrame",
-                "_leo_pane:logFrame"
-            ],
-            "sizes": [
-                302,
-                299
-            ],
-            "orientation": 2
-        }
-    ],
-    "sizes": [
-        786,
-        569
-    ],
-    "orientation": 1
-}</t>
-<t tx="tscv11.20180127104929.1">@
-
-Terry:
-    
-The "proper" way to modify them is to create a descendant class, as you
-did with InputDialogs, and re-implement the function in the descendant
-class, usually calling the original classes function as well:
-
-class MyHideAwareWidget(QWidget):
-
-    def hideEvent(self, event):
-        QWidget.hideEvent(self, event) # the rare case when you do
-                                       # include self
-        &lt;do your hide related stuff&gt;
-
-But that assumes you're instantiating the descendant class yourself.
-That's not the case with the viewrendered pane, so it's probably
-easiest to "monkey patch" the methods on the existing widget.
-
-so the pattern is something like
-
-def myHideEvent(self, event):
-    &lt;do your hide related stuff&gt;
-    self.realHideEvent(self, event)
-
-def get_vr(self):
-    vr = c.frame.top.findChild(QtWidgets.QWidget, 'viewrendered_pane')
-    if not vr:
-        return None  # not opened yet
-    if vr.hideEvent != InputDialogs.myHideEvent:
-        self.realHideEvent = vr.hideEvent
-        vr.hideEvent = InputDialogs.myHideEvent
-    return vr
-
-then use self.get_vr() to get vr, instead of whatever you're doing now
-to get it.
-@c
-</t>
 </tnodes>
 </leo_file>

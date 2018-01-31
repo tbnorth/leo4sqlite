@@ -1,5 +1,5 @@
 #@+leo-ver=5-thin
-#@+node:tscv11.20180119175627.2: * @file ~/Desktop/leo-editor/leo/plugins/leo4sqlite.py
+#@+node:tscv11.20180119175627.2: * @file /home/tsc/Desktop/leo-editor-master/leo/plugins/leo4sqlite.py
 #@@color
 #@+<< docstring >>
 #@+node:tscv11.20180119175627.3: ** << docstring >>
@@ -10,27 +10,29 @@
 
 *Introduction:*
 
-| The script 'leo4sqlite.py' is a Leo-specific python script that provides basic import/export
-| functionality between Leo outlines and sqlite3 tables, as well as blob support  (insert, extract,
-| search for a blob by any value in any column, view the blob in the render pane or open it
-| with external tools). 
+| The script 'leo4sqlite.py' is a Leo-specific python script that provides
+| basic import/export functionality between Leo outlines and sqlite3 tables
+| as well as blob support  (insert, extract, search for a blob by any value in
+| any column, view the blob in the render pane or open it with external tools). 
 
-| Imported tables are stored internally as part of the outline, while exported tables (and blobs)
-| are stored in sqlite3 database files.
+| Imported tables are stored internally as part of the outline, while exported
+| tables (and blobs) are stored in sqlite3 database files.
 
-| Imported tables appear as children of the "data" node (the last top-level node). To clear this
-| node of accumulated imports, use the command 'sqlite-clear-data'.
+| Imported tables appear as children of the "data" node (the last top-level
+| node). To clear this node of accumulated imports, use the command
+| 'sqlite-clear-data'.
 
-| I am considering database level import/export functions to round things out if  there's
-| enough interest.
+| I am considering database level import/export functions to round things
+| out if  there's enough interest.
 |
 
 *Blobs*
 
-| Blobs are arranged one per row with the other columns in that row containing information
-| about them. The last three columns of each row are reserved for the blob, the filename,
-| and the extension, in that order. Any number of columns may be added  and used to
-| store additional information related to the blob (which will precede it in the table).
+| Blobs are arranged one per row with the other columns in that row
+| containing information about them. The last three columns of each row
+| are reserved for the blob, the filename, and the extension, in that order.
+| Any number of columns may be added  and used to store additional
+| information related to the blob (which will precede it in the table).
 |
 
 *Development Status:*
@@ -118,15 +120,33 @@
 
 **sqlite-clear-data**
 
-This command removes all children of the 'data' node, where all imports
-appear. Use caution!
+| This command removes all children of the 'data' node, where all imports
+| appear. Use caution!
 
 
 **sqlite-purge-view**
 
-This command removes all children of the 'temp' node (used for viewing
-blobs temporarily). It **also** deletes *all* physical files from the
-'leo4sqlite-temp' directory.
+| This command removes all children of the 'temp' node (used for viewing
+| blobs temporarily). It **also** deletes *all* physical files from the
+| 'leo4sqlite-temp' directory.
+
+|
+
+**Settings**
+
+| There are now four @settings nodes which should be created and placed
+| in either the current outline's @settings tree or in myLeoSettings.leo.
+
+| The nodes are:
+
+| @string sqlite_output_dir = "<path>" -> Output directory for extracted blobs.
+| @string sqlite_tem_dir = "<path>"     -> Temporary folder for viewed blobs.
+| @bool del_blobs_on_exit = 1 (yes) **or** 0 (no)
+
+| And finally,
+
+| @data external tools - this node holds paths to external tools for use when
+| opening blobs. The format is simply one full path per line.
 
 |
 
@@ -180,21 +200,14 @@ from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QDesktopWidget
 #@-<< imports >>
-
-from leo.plugins.viewrendered import ViewRenderedController
-
-realHideEvent = ViewRenderedController.hideEvent
-def myHideEvent(self, event):
-    g.es("VR pane hidden")
-    realHideEvent(self, event)
-ViewRenderedController.hideEvent = myHideEvent
-
 #@+others
 #@+node:tscv11.20180119175627.6: ** onCreate
 def onCreate (tag, keys):
     
     c = keys.get('c')
     c._leo4sqlite = {}
+
+    g.registerHandler('end1', delBlobs(c))
 #@+node:tscv11.20180119175627.7: ** init
 def init ():
 
@@ -204,40 +217,59 @@ def init ():
             g.registerHandler('before-create-leo-frame',onCreate)
         else: # Create the commander class *after* the frame is created.
             g.registerHandler('after-create-leo-frame',onCreate)
-        g.plugin_signon(__name__)   
+        g.plugin_signon(__name__)       
     return ok
+
+#@+node:tsc.20180130145507.1: ** delBlobs
+def delBlobs(c): 
+    
+    del_blobs_on_exit = c.config.getBool('del_blobs_on_exit')
+    
+    if del_blobs_on_exit == 1:
+        sqlite_temp_dir = c.config.getString('sqlite_temp_dir') 
+        sqlite_temp_dir = sqlite_temp_dir[1:-1]
+            
+        os.chdir(sqlite_temp_dir)
+        files=glob.glob('*')
+        if files:
+            for filename in files:
+                os.unlink(filename)
 #@+node:tscv11.20180119175627.8: ** class Leo4SQLiteController
 class Leo4SQLiteController:
-
+    
     #@+others
     #@+node:tscv11.20180119175627.9: *3* init
     def init (self, c):
-            
+        
         ok = g.app.gui.guiName() in ('qt','qttabs')
         if ok:
             if 1: # Create the commander class *before* the frame is created.
                 g.registerHandler('before-create-leo-frame',onCreate)
             else: # Create the commander class *after* the frame is created.
-                g.registerHandler('after-create-leo-frame',onCreate)
-            g.plugin_signon(__name__)   
+                g.registerHandler('after-create-leo-frame',onCreate)        
+            g.plugin_signon(__name__)
         return ok
-
     #@-others
-#@+node:tscv11.20180126194421.1: ** class Sqlite3DatabaseError
+#@+node:tsc.20180130234230.1: ** exceptions
+#@+others
+#@+node:tscv11.20180126194421.1: *3* class Sqlite3DatabaseError
 class Sqlite3DatabaseError(Exception): pass
-#@+node:tscv11.20180125141240.1: ** class NoInternalDBsError
+#@+node:tscv11.20180125141240.1: *3* class NoInternalDBsError
 class NoInternalDBsError(Exception): pass
-#@+node:tscv11.20180127173942.1: ** class NoOutputDirectory
+#@+node:tscv11.20180127173942.1: *3* class NoOutputDirectory
 class NoOutputDirectory(Exception): pass
-#@+node:tscv11.20180127172812.1: ** class NoTempDirectory
+#@+node:tscv11.20180127172812.1: *3* class NoTempDirectory
 class NoTempDirectory(Exception): pass
-#@+node:tscv11.20180125130031.1: ** class UserCancel
+#@+node:tscv11.20180125130031.1: *3* class UserCancel
 class UserCancel(Exception): pass
-#@+node:tscv11.20180126102707.1: ** class NodeExists
+#@+node:tscv11.20180126102707.1: *3* class NodeExists
 class NodeExists(Exception): pass
+#@-others
+
+# custom exceptions
 #@+node:tscv11.20180119175627.10: ** class InputDialogs
 class InputDialogs(QWidget):
-
+    
     #@+others
     #@+node:tscv11.20180119175627.11: *3* __init__
     def __init__(self, c):
@@ -808,6 +840,7 @@ class InputDialogs(QWidget):
             if c._leo4sqlite['layout'] == "four":
                 export_table4(self, c, p, col_nums, col_names, col_types, blob_col)
     #@+node:tscv11.20180124174517.1: *4* make_nodes
+    # attempt to split grand_central
     #@+at
     # def make_nodes(self, c):
     #     

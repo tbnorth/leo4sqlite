@@ -154,14 +154,22 @@
 | opening blobs. The format is simply one full path per line, ending in the name
 | of an executable.
 |
+
+**Outline Template**
+
+*leo4sqlite_template.leo*
+
+| Included with this distribution you'll find a template made for leo4sqlite that
+| includes the standard nodes you'll need, ready for customization.
 |
 
+ 
 contact: tsc.v1.1@gmail.com
 '''
 #@-<< docstring >>
 #@@language python
 #@@tabwidth -4
-__version__ = '0.020'
+__version__ = '0.031'
 #@+<< version history >>
 #@+node:tscv11.20180119175627.4: ** << version history >>
 #@+at
@@ -199,7 +207,7 @@ __version__ = '0.020'
 import leo.core.leoGlobals as g
 
 import glob
-import sys
+#import sys
 import os
 import re
 import sqlite3
@@ -265,53 +273,27 @@ class InputDialogs(QWidget):
         self.show() 
 
 
-    #@+node:tscv11.20180119175627.14: *3* pick_action
+    #@+node:tsc.20180201065401.1: *3* pick_action
     def pick_action(self, c):
-
-        if c._leo4sqlite['action'] == "import table":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.get_layout(c)
-            #self.make_nodes(c) # split @tbl and @db3 node creation from table import/export code # tsc
-            self.grand_central(c)
-
-        if c._leo4sqlite['action'] == 'export table':
-            self.get_int_dbs(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.get_layout(c)
-            self.grand_central(c)
-
-        if c._leo4sqlite['action'] == "view blob":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.view_blob(c)
-
-        if c._leo4sqlite['action'] == "insert blob":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.insert_blob(c)
-
-        if c._leo4sqlite['action'] == "extract blob":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.extract_blob(c)
-
-        if c._leo4sqlite['action'] == "open blob":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.open_blob(c)
-
-        if c._leo4sqlite['action'] == "edit blob":
-            self.get_ext_db(c)
-            self.select_table(c)
-            self.get_blob_col(c)
-            self.edit_blob(c)
+        
+        """This is Terry Brown's brainchild. I added 'cmds' to make it easier to customize the routine of functions that is executed before each command (in the future, if needed - plus I'm a lazy typist))."""
+        
+        action = c._leo4sqlite['action']    
+        cmds = ("get_ext_db select_table get_blob_col")
+        
+        actions = {
+            "insert blob": ((cmds) + " insert blob"),
+            "extract blob": ((cmds) + " extract blob"),
+            "open blob": ((cmds) + " open blob"),
+            "view blob": ((cmds) + " view blob"),
+            "edit blob": ((cmds) + " edit blob")
+        }
+        
+        if action not in actions:
+            raise UnknownActionError()
+        for step in actions[action].split():
+            method = getattr(self, step)
+            method(c)
     #@+node:tscv11.20180119175627.15: *3* get_ext_db
     def get_ext_db(self, c):
         
@@ -332,8 +314,6 @@ class InputDialogs(QWidget):
             filename = os.path.basename(path.rstrip('/'))
             fn_lst.append(filename)
             return filename
-        
-        sys.tracebacklimit = 0
         
         db3_lst = c.find_h(r'^.*@db3.*$')   
 
@@ -744,15 +724,14 @@ class InputDialogs(QWidget):
         blob_col = c._leo4sqlite['blob_col']
         layout = c._leo4sqlite['layout']
         
-        if c._leo4sqlite['action'] != 'export table':
-            db3_h = "@db3 " + str(db_filename)
-            p = g.findNodeAnywhere(c, db3_h)
-        
+        #if c._leo4sqlite['action'] == 'import table':
+        db3_h = "@db3 " + str(db_filename)
+        p = g.findNodeAnywhere(c, db3_h)
         if p:
             pass
         
         else:    
-            p = c.lastTopLevel().insertAfter()
+            p = c.lastTopLevel().insertAsLastChild()
             c.selectPosition(p)
             p.h = "@db3 " + str(db_filename)
             c.redraw(p)
@@ -764,7 +743,7 @@ class InputDialogs(QWidget):
         
         if c._leo4sqlite['action'] == 'import table':
             if layout == "one":
-                import_table1(self, c, col_nums, col_names, col_types, blob_col, p)
+                import_table1(self, c, p, col_nums, col_names, col_types, blob_col)
         
             if layout == "two":
                 import_table2(self, c, p, col_nums, col_names, col_types, blob_col)
@@ -791,28 +770,6 @@ class InputDialogs(QWidget):
                 
             if c._leo4sqlite['layout'] == "four":
                 export_table4(self, c, p, col_nums, col_names, col_types, blob_col)
-    #@+node:tscv11.20180124174517.1: *4* make_nodes
-    #@+at
-    # def make_nodes(self, c):
-    #     
-    #     db_filename = c._leo4sqlite['db_filename'] # pyf
-    #     
-    #     if c._leo4sqlite['action'] == 'import table':
-    #         db3_h = "@db3 " + str(db_filename)
-    #         p = g.findNodeAnywhere(c, db3_h)
-    #         if p:
-    #             pass
-    #         else:    
-    #             p = c.lastTopLevel().insertAsNthChild(1)
-    #             p.h = "@db3 " + str(db_filename)
-    #             c.redraw(p)
-    #     
-    #         p = p.insertAsNthChild(1)
-    #         p.h = "@tbl " + str(c._leo4sqlite['table_name'])
-    #         c.selectPosition(p)
-    #         c.redraw(p)
-    #         
-    #         #return p
     #@-others
 #@+node:tsc.20180130234230.1: ** class Leo4SqliteError
 class Leo4SqliteError(Exception): pass
@@ -834,6 +791,10 @@ class UserCancel(Leo4SqliteError):
 
 class NodeExists(Leo4SqliteError):
     """Node already exists. New node not created."""
+
+class UnknownActionError(Leo4SqliteError):
+    """Unknow action error."""
+    
 #@+node:tsc.20180130145507.1: ** delBlobs
 def delBlobs(c): 
     
@@ -851,7 +812,7 @@ def delBlobs(c):
 #@+node:tscv11.20180119175627.26: ** imports
 #@+others
 #@+node:tscv11.20180119175627.29: *3* import_table1
-def import_table1(self, c, col_nums, col_names, col_types, blob_col, p):
+def import_table1(self, c, p, col_nums, col_names, col_types, blob_col):
 
     table_name = c._leo4sqlite['table_name']
     filepath = c._leo4sqlite['db_filename']
@@ -1077,7 +1038,7 @@ def import_table4(self, c, p, col_nums, col_names, col_types, blob_col):
 #@+node:tscv11.20180119175627.31: ** exports
 #@+others
 #@+node:tscv11.20180119175627.32: *3* export_table1
-def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
+def export_table1(self, c, p, col_nums, col_names, col_types, blob_col):
     
     def place_holder(line):
         return '({})'.format(', '.join('?' * len(line)))
@@ -1106,7 +1067,7 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
     sql = sql[:-2]
     sql = sql + (")")
 
-    lines = lines[8:]
+    lines = lines[7:]
     
     db_filename = c._leo4sqlite['db_filename']
     
@@ -1134,73 +1095,6 @@ def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
         else:
             g.es("\ndone\n")
             return
-#@+node:tscv11.20180119175627.33: *4* export_table1
-#@+at
-# def export_table1(self, c, p, num_cols, col_names, col_types, blob_col):
-#     
-#     hlines = []
-#     
-#     def place_holder(line):
-#         return '({})'.format(', '.join('?' * len(line)))
-#     
-#     table_name = c._leo4sqlite['table_name']
-# 
-#     headline = ("@tbl " + table_name)
-#     tbl_node = g.findNodeAnywhere(c, (headline))        
-#     c.selectPosition(tbl_node)
-#     c.redraw()
-#     p = c.p
-# 
-#     # lines = re.split('\n', p.b)
-#     # lay = lines[6]
-#     # layout = lay[8:]
-#     
-#     g.es("\nexporting table " + table_name + "\n\n(layout 1)\n")
-# 
-#     lines = re.split("\n", p.b)
-# 
-#     db_file_path = lines[0]
-# 
-#     new_names = re.sub(r'[\"\'\[\]\s]', "", str(col_names))
-#     new_types = re.sub(r'[\"\'\[\]\s]', "", str(col_types))
-# 
-#     split_names = re.split(r',', str(new_names))
-#     split_types = re.split(r',', str(new_types))
-#     
-#     sql = "("
-#     for i in range(len(split_names)):
-#         sql = sql + split_names[i] + " " + split_types[i] + ", "
-#     sql = sql[:-2]
-#     sql = sql + (")")
-# 
-#     lines = lines[5:]
-#     
-#     db_filename = c._leo4sqlite['db_filename']
-#     
-#     conn = sqlite3.connect(db_filename)
-#     cur = conn.cursor()
-# 
-#     statement = "SELECT name FROM sqlite_master WHERE type='table';"
-#     if (table_name,) in cur.execute(statement).fetchall():
-#         overwrite = g.app.gui.runAskYesNoDialog(c, "overwrite existing table?", message="a table by that name already exists.\nreplace it with current table?") 
-#         if overwrite == "no":
-#             print("cancelled\n")
-#             return
-#         print("table: '%s' exists" % table_name)
-#         cur.execute("DROP TABLE " + table_name)
-#         print("\ndropping old table")
-#     cur.execute("CREATE TABLE " + table_name + " " + sql)
-#     print("creating new table")
-# 
-#     for line in lines:    
-#         if line != "":
-#             cells = re.split(",", line)         
-#             plh = place_holder(cells)
-#             cur.execute("insert into " + table_name + " values {} ".format(plh), cells)
-#             conn.commit()
-#         else:
-#             g.es("\ndone\n")
-#             return
 #@+node:tscv11.20180119175627.34: *3* export_table2
 def export_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     
@@ -1237,7 +1131,7 @@ def export_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     sql = sql[:-2]
     sql = sql + (")")
 
-    lines = lines[8:]
+    lines = lines[7:]
     
     conn = sqlite3.connect(db_filename)
     cur = conn.cursor()
@@ -1310,7 +1204,7 @@ def export_table3(self, c, p, col_nums, col_names, col_types, blob_col):
     sql = sql[:-2]
     sql = sql + (")")
 
-    lines = lines[8:]
+    lines = lines[7:]
 
     conn = sqlite3.connect(db_filename)
     cur = conn.cursor()
@@ -1395,7 +1289,7 @@ def export_table4(self, c, p, col_nums, col_names, col_types, blob_col):
     sql = sql[:-2]
     sql = sql + (")")
     
-    lines = lines[8:]
+    lines = lines[7:]
     
     conn = sqlite3.connect(db_filename)
     cur = conn.cursor()

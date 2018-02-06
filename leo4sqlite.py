@@ -1,9 +1,3 @@
-#@+leo-ver=5-thin
-#@+node:tscv11.20180119175627.2: * @file /home/tsc/Desktop/leo-editor-master/leo/plugins/leo4sqlite.py
-#@@color
-#@+<< docstring >>
-#@+node:tscv11.20180119175627.3: ** << docstring >>
-#@@nocolor
 ''' **leo4sqlite v0.31** - by tscv11
 
 |
@@ -166,13 +160,7 @@
  
 contact: tsc.v1.1@gmail.com
 '''
-#@-<< docstring >>
-#@@language python
-#@@tabwidth -4
 __version__ = '0.031'
-#@+<< version history >>
-#@+node:tscv11.20180119175627.4: ** << version history >>
-#@+at
 # version history
 # 
 # *leo4sqlite.py*
@@ -203,9 +191,6 @@ __version__ = '0.031'
 #  
 #  **v.033** - added sqlite-make-template command, which creates a new outline with all all of the standard nodes needed to use the script.
 #  
-#@-<< version history >>
-#@+<< imports >>
-#@+node:tscv11.20180119175627.5: ** << imports >>
 
 import leo.core.leoGlobals as g
 
@@ -223,16 +208,12 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QInputDialog
 from PyQt5.QtWidgets import QDesktopWidget
-#@-<< imports >>
-#@+others
-#@+node:tscv11.20180119175627.6: ** onCreate
 def onCreate (tag, keys):
     
     c = keys.get('c')
     c._leo4sqlite = {}
 
     g.registerHandler('end1', delBlobs(c))
-#@+node:tscv11.20180119175627.7: ** init
 def init ():
 
     ok = g.app.gui.guiName() in ('qt','qttabs')
@@ -244,11 +225,8 @@ def init ():
         g.plugin_signon(__name__)       
     return ok
 
-#@+node:tscv11.20180119175627.10: ** class InputDialogs
 class InputDialogs(QWidget):
     
-    #@+others
-    #@+node:tscv11.20180119175627.11: *3* __init__
     def __init__(self, c):
         super().__init__()
         self.title = 'leo4sqlite'
@@ -263,7 +241,6 @@ class InputDialogs(QWidget):
         except Leo4SqliteError as l4serr:
             g.es("\nleo4sqlite plugin: %s\n" % l4serr.__doc__)  
             return
-    #@+node:tscv11.20180119175627.12: *3* initUI
     def initUI(self, c):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -277,7 +254,6 @@ class InputDialogs(QWidget):
         self.show() 
 
 
-    #@+node:tsc.20180201065401.1: *3* pick_action
     def pick_action(self, c):
         
         action = c._leo4sqlite['action']    
@@ -285,13 +261,13 @@ class InputDialogs(QWidget):
         cmds = ("get_ext_db select_table get_blob_col")
         
         actions = {
-                "import table": ((cmds) + " import table"),
-                "export table": ((cmds) + " export table"),
-                "insert blob": ((cmds) + " insert blob"),
-                "extract blob": ((cmds) + " extract blob"),
-                "open blob": ((cmds) + " open blob"),
-                "view blob": ((cmds) + " view blob"),
-                "edit blob": ((cmds) + " edit blob"),
+                "import table": cmds + " get_layout grand_central",
+                "export table": cmds + " get_layout grand_central",
+                "insert blob": cmds + " insert_blob",
+                "extract blob": cmds + " extract_blob",
+                "open blob": cmds + " open_blob",
+                "view blob": cmds + " view_blob",
+                "edit blob": cmds + " edit_blob",
         }
         
         if action not in actions:
@@ -299,56 +275,9 @@ class InputDialogs(QWidget):
         for step in actions[action].split():
             method = getattr(self, step)
             method(c)
+        
 
         
-    #@+node:tsc.20180205184838.1: *4* pick_action
-    #@+at
-    # def pick_action(self, c):
-    #     
-    #     action = c._leo4sqlite['action']
-    #     
-    #     if action == "import table":
-    #         self.get_ext_db(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.get_layout(c)
-    #         self.grand_central(c)
-    #         
-    #     if action == "export table":
-    #         self.get_int_dbs(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.get_layout(c)
-    #         self.grand_central(c)
-    #     
-    #     if action == "view blob":
-    #         self.get_settings(c)
-    #         self.get_ext_db(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.view_blob(c)
-    #         self.grand_central(c)
-    #     
-    #     if action == "insert blob":
-    #         self.get_ext_db(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.insert_blob(c)
-    #     
-    #     if action == "extract blob":
-    #         self.get_settings(c)
-    #         self.get_ext_db(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.extract_blob(c)
-    #     
-    #     if action == "open blob":
-    #         self.get_settings(c)
-    #         self.get_ext_db(c)
-    #         self.select_table(c)
-    #         self.get_blob_col(c)
-    #         self.open_blob(c)
-    #@+node:tscv11.20180119175627.15: *3* get_ext_db
     def get_ext_db(self, c):
         
         options = QFileDialog.Options()
@@ -360,7 +289,6 @@ class InputDialogs(QWidget):
             return
         else:
             c._leo4sqlite['db_filename'] = db_fname
-    #@+node:tscv11.20180119175627.16: *3* get_int_dbs
     def get_int_dbs(self, c):
         
         def get_filename(path):
@@ -391,7 +319,6 @@ class InputDialogs(QWidget):
                 c._leo4sqlite['db_filename'] = item
 
 
-    #@+node:tscv11.20180119175627.17: *3* select_table
     def select_table(self, c):
 
         db_filename = c._leo4sqlite['db_filename']
@@ -415,7 +342,6 @@ class InputDialogs(QWidget):
         c._leo4sqlite['table_name'] = item
         c._leo4sqlite['tbl_names'] = tbl_names
 
-    #@+node:tscv11.20180119175627.18: *3* get_blob_col
     def get_blob_col(self, c):
         
         col_nums = []
@@ -459,7 +385,6 @@ class InputDialogs(QWidget):
         c._leo4sqlite['blob_col'] = blob_col
         c._leo4sqlite['file_col'] = file_col
         c._leo4sqlite['ext_col'] = ext_col
-    #@+node:tscv11.20180119175627.19: *3* insert_blob
     def insert_blob(self, c):
             
         import os.path
@@ -508,7 +433,6 @@ class InputDialogs(QWidget):
             conn.commit()
             
             g.es("\ndone\n")
-    #@+node:tscv11.20180119175627.20: *3* extract_blob
     def extract_blob(self, c):
         
         ablob = []
@@ -565,7 +489,6 @@ class InputDialogs(QWidget):
         
         conn.close()
         g.es("\ndone\n")
-    #@+node:tscv11.20180119175627.21: *3* open_blob
     def open_blob(self, c):
         
         items = []
@@ -624,7 +547,6 @@ class InputDialogs(QWidget):
             cursor.close()
 
             p = subprocess.Popen([ext_tool, filepath])
-    #@+node:tscv11.20180119175627.22: *3* view_blob
     def view_blob(self, c):
 
         img_types = ['.png', '.jpg', '.bmp', '.gif']
@@ -705,7 +627,6 @@ class InputDialogs(QWidget):
             c.redraw()
             p = p.parent() 
             c.redraw()    
-    #@+node:tscv11.20180119175627.23: *3* edit_blob
     def edit_blob(self, c):
         
         def place_holder(line):
@@ -740,7 +661,6 @@ class InputDialogs(QWidget):
         conn.commit()
 
         g.es('done')
-    #@+node:tscv11.20180119175627.24: *3* get_layout
     def get_layout(self, c):
         
         action = c._leo4sqlite['action']
@@ -765,7 +685,6 @@ class InputDialogs(QWidget):
             layout = line[8:]
             c._leo4sqlite['layout'] = layout
             g.es('layout: ' + str(layout))
-    #@+node:tscv11.20180119175627.25: *3* grand_central
     def grand_central(self, c):
         
         db_filename = c._leo4sqlite['db_filename']
@@ -792,7 +711,7 @@ class InputDialogs(QWidget):
             c.selectPosition(p)
             p.h = "@tbl " + str(c._leo4sqlite['table_name'])
             c.redraw(p)
-            return p
+            #X return p
         
         if c._leo4sqlite['action'] == 'import table':
             if layout == "one":
@@ -824,8 +743,6 @@ class InputDialogs(QWidget):
             if c._leo4sqlite['layout'] == "four":
                 export_table4(self, c, p, col_nums, col_names, col_types, blob_col)
                 
-    #@-others
-#@+node:tsc.20180130234230.1: ** class Leo4SqliteError
 class Leo4SqliteError(Exception): pass
 
 class Sqlite3DatabaseError(Leo4SqliteError):
@@ -849,9 +766,6 @@ class NodeExists(Leo4SqliteError):
 class UnknownActionError(Leo4SqliteError):
     """Unknow action error."""
     
-#@+node:tscv11.20180119175627.31: ** exports
-#@+others
-#@+node:tscv11.20180119175627.32: *3* export_table1
 def export_table1(self, c, p, col_nums, col_names, col_types, blob_col):
     
     def place_holder(line):
@@ -909,7 +823,6 @@ def export_table1(self, c, p, col_nums, col_names, col_types, blob_col):
         else:
             g.es("\ndone\n")
             return
-#@+node:tscv11.20180119175627.34: *3* export_table2
 def export_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     
     hlines = []
@@ -970,7 +883,6 @@ def export_table2(self, c, p, col_nums, col_names, col_types, blob_col):
             cur.execute("insert into " + table_name + " values {} ".format(plh), cells)
             conn.commit()
     g.es("\ndone\n")
-#@+node:tscv11.20180119175627.35: *3* export_table3
 def export_table3(self, c, p, col_nums, col_names, col_types, blob_col):
 
     def place_holder(line):
@@ -1062,7 +974,6 @@ def export_table3(self, c, p, col_nums, col_names, col_types, blob_col):
     row = row[num_cols:]
             
     print("\ndone\n")
-#@+node:tscv11.20180119175627.36: *3* export_table4
 def export_table4(self, c, p, col_nums, col_names, col_types, blob_col):
     
     def place_holder(line):
@@ -1136,10 +1047,6 @@ def export_table4(self, c, p, col_nums, col_names, col_types, blob_col):
         x+= 1
     
     g.es("done\n")
-#@-others
-#@+node:tscv11.20180119175627.26: ** imports
-#@+others
-#@+node:tscv11.20180119175627.29: *3* import_table1
 def import_table1(self, c, p, col_nums, col_names, col_types, blob_col):
 
     table_name = c._leo4sqlite['table_name']
@@ -1185,7 +1092,6 @@ def import_table1(self, c, p, col_nums, col_names, col_types, blob_col):
     headline = ("@tbl " + table_name)    
     tbl_node = g.findNodeAnywhere(c, (headline))
     c.selectPosition(tbl_node)
-#@+node:tscv11.20180119175627.28: *3* import_table2
 def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
 
     db_filename = c._leo4sqlite['db_filename']
@@ -1238,7 +1144,6 @@ def import_table2(self, c, p, col_nums, col_names, col_types, blob_col):
     headline = ("@tbl " + table_name)
     tbl_node = g.findNodeAnywhere(c, (headline))
     c.selectPosition(tbl_node)
-#@+node:tscv11.20180119175627.27: *3* import_table3
 def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
 
     db_filename = c._leo4sqlite['db_filename']
@@ -1290,7 +1195,6 @@ def import_table3(self, c, p, col_nums, col_names, col_types, blob_col):
     headline = ("@tbl " + table_name)    
     tbl_node = g.findNodeAnywhere(c, (headline))
     c.selectPosition(tbl_node)
-#@+node:tscv11.20180119175627.30: *3* import_table4
 def import_table4(self, c, p, col_nums, col_names, col_types, blob_col):
 
     db_filename = c._leo4sqlite['db_filename']
@@ -1362,8 +1266,6 @@ def import_table4(self, c, p, col_nums, col_names, col_types, blob_col):
     headline = ("@tbl " + table_name)
     tbl_node = g.findNodeAnywhere(c, (headline))
     c.selectPosition(tbl_node)
-#@-others
-#@+node:tsc.20180130145507.1: ** delBlobs
 def delBlobs(c): 
     
     del_blobs_on_exit = c.config.getBool('del_blobs_on_exit')
@@ -1377,10 +1279,6 @@ def delBlobs(c):
         if files:
             for filename in files:
                 os.unlink(filename)
-#@+node:tscv11.20180119175627.37: ** g.commands
-#@+others
-<<<<<<< HEAD
-#@+node:tsc.20180202084519.1: *3* @g.command('sqlite-make-template')
 @g.command('sqlite-make-template')
 def sqlite_make_template(event):
     
@@ -1420,160 +1318,6 @@ def sqlite_make_template(event):
         mknode(p.insertAfter(), data)
    
     c.redraw()
-#@+node:tsc.20180202001203.1: *4* @g.command('sqlite-make-template')
-#@+at
-# # alternate implementation
-# 
-# @g.command('sqlite-make-template')
-# def sqlite_make_template(event):
-#     
-#     """Thanks to Terry Brown for this idea (making template creation a command instead of a separate file). More could be done, such as asking for the new filename and saving it when the template has been created, as well as more data-entry-related features in general. """
-#     
-#     c = event.get('c')
-#     
-#     c.executeMinibufferCommand('new')
-#     
-#     for f in g.app.windowList: 
-#         c = f.c                             # could be better - what if there are other 'untitled' tabs?
-#         if f == "untitled":            # giving the new tab a distinctive name would be better.
-#             c.set_focus(f)
-#                     
-#     nam_nd = c.p
-#     nam_nd.h = "leo4sqlite template"
-#     
-#     set_nd = nam_nd.insertAfter()
-#     set_nd.h = "@settings"
-#     set_nd.b = "Please customize the following nodes to suit your needs."
-# 
-#     tmp_nd = set_nd.insertAsNthChild(1)
-#     c.selectPosition(tmp_nd)    
-#     tmp_nd.h = "@string sqlite_temp_dir = ~/leo4sqlite-temp"
-#     tmp_nd.b = "Enter the full path to the temp directory. The folder name must be as shown."
-#     
-#     out_nd = set_nd.insertAsNthChild(2)
-#     c.selectPosition(out_nd)
-#     out_nd.h = "@string sqlite_output_dir = ~/leo4sqlite-output"
-#     out_nd.b = "Enter the full path to the output directory. Again, the folder name must be identical."
-# 
-#     del_nd = set_nd.insertAsNthChild(3)
-#     c.selectPosition(del_nd)
-#     del_nd.h = "@bool del_blobs_on_exit = 1: yes | 0: no"
-#     del_nd.b = "Automatically delete all temporary files (created when viewing blobs) while closing Leo."
-#  
-#     ext_nd = set_nd.insertAsNthChild(4)
-#     c.selectPosition(ext_nd)
-#     ext_nd.h = "@data external tools"
-#     ext_nd.b = "# leave one blank line at the end of this body text\n\nExamples for linux:\n\n/usr/bin/gimp\n/usr/bin/xviewer\n"
-# 
-#     cmd_nd = set_nd.insertAsNthChild(5)
-#     c.selectPosition(cmd_nd)
-#     cmd_nd.h = "@commands"
-#     cmd_nd.b = "Examples of how to create hotkeys. Command names can be found in the docstring."
-# 
-#     clr_nd = cmd_nd.insertAsLastChild()
-#     c.selectPosition(clr_nd)
-#     clr_nd.h = "@command sqlite-clear-temp @key Alt-Shift-Ctrl-t"
-#     clr_nd.b = "c.executeMinibufferCommand('sqlite-clear-temp')"
-#     
-#     del_nd = cmd_nd.insertAsLastChild()
-#     c.selectPosition(del_nd)
-#     del_nd.h = "@command sqlite-delete-data @key Alt-Shift-Ctrl-d"
-#     del_nd.b = "c.executeMinibufferCommand('sqlite-delete-data')"
-# 
-#     prg_nd = cmd_nd.insertAsLastChild()
-#     c.selectPosition(prg_nd)
-#     prg_nd.h = "@command sqlite-purge-files @key Alt-Shift-Ctrl-p"
-#     prg_nd.b = "c.executeMinibufferCommand('sqlite-purge-files')"
-#     
-#     temp_nd = set_nd.insertAfter()
-#     c.selectPosition(temp_nd)
-#     temp_nd.h = "temp"
-#     temp_nd.b = "Temporary nodes can be found here, such as the @image nodes used when viewing blobs."
-# 
-#     data_nd = temp_nd.insertAfter()
-#     c.selectPosition(data_nd)
-#     data_nd.h = "data"
-#     data_nd.b = "This node must be the last top-level node. All table imports appear here and all table exports originate here."
-#     
-#     c.selectPosition(tmp_nd)
-#     c.redraw()
-=======
-#@+node:tsc.20180202001203.1: *3* @g.command('sqlite-make-template')
-@g.command('sqlite-make-template')
-def sqlite_make_template(event):
-    
-    """Thanks to Terry Brown for this idea (making template creation a command instead of a separate file). More could be done, such as asking for the new filename and saving it when the template has been created, as well as more data-entry-related features in general. """
-    
-    c = event.get('c')
-    
-    c.executeMinibufferCommand('new')
-    
-    for f in g.app.windowList: 
-        c = f.c                             # could be better - what if there are other 'untitled' tabs?
-        if f == "untitled":            # giving the new tab a distinctive name would be better.
-            c.set_focus(f)
-                    
-    nam_nd = c.p
-    nam_nd.h = "leo4sqlite template"
-    
-    set_nd = nam_nd.insertAfter()
-    set_nd.h = "@settings"
-    set_nd.b = "Please customize the following nodes to suit your needs."
-
-    tmp_nd = set_nd.insertAsNthChild(1)
-    c.selectPosition(tmp_nd)    
-    tmp_nd.h = "@string sqlite_temp_dir = \"~/leo4sqlite-temp\""
-    tmp_nd.b = "Enter the full path to the temp directory. The folder name must be as shown."
-    
-    out_nd = set_nd.insertAsNthChild(2)
-    c.selectPosition(out_nd)
-    out_nd.h = "@string sqlite_output_dir = \"~/leo4sqlite-output\""
-    out_nd.b = "Enter the full path to the output directory. Again, the folder name must be identical."
-
-    del_nd = set_nd.insertAsNthChild(3)
-    c.selectPosition(del_nd)
-    del_nd.h = "@bool del_blobs_on_exit = 1: yes | 0: no"
-    del_nd.b = "Automatically delete all temporary files (created when viewing blobs) while closing Leo."
- 
-    ext_nd = set_nd.insertAsNthChild(4)
-    c.selectPosition(ext_nd)
-    ext_nd.h = "@data external tools"
-    ext_nd.b = "# leave one blank line at the end of this body text\n\nExamples for linux:\n\n/usr/bin/gimp\n/usr/bin/xviewer\n"
-
-    cmd_nd = set_nd.insertAsNthChild(5)
-    c.selectPosition(cmd_nd)
-    cmd_nd.h = "@commands"
-    cmd_nd.b = "Examples of how to create hotkeys. Command names can be found in the docstring."
-
-    clr_nd = cmd_nd.insertAsLastChild()
-    c.selectPosition(clr_nd)
-    clr_nd.h = "@command sqlite-clear-temp @key Alt-Shift-Ctrl-t"
-    clr_nd.b = "c.executeMinibufferCommand('sqlite-clear-temp')"
-    
-    del_nd = cmd_nd.insertAsLastChild()
-    c.selectPosition(del_nd)
-    del_nd.h = "@command sqlite-delete-data @key Alt-Shift-Ctrl-d"
-    del_nd.b = "c.executeMinibufferCommand('sqlite-delete-data')"
-
-    prg_nd = cmd_nd.insertAsLastChild()
-    c.selectPosition(prg_nd)
-    prg_nd.h = "@command sqlite-purge-files @key Alt-Shift-Ctrl-p"
-    prg_nd.b = "c.executeMinibufferCommand('sqlite-purge-files')"
-    
-    temp_nd = set_nd.insertAfter()
-    c.selectPosition(temp_nd)
-    temp_nd.h = "temp"
-    temp_nd.b = "Temporary nodes can be found here, such as the @image nodes used when viewing blobs."
-
-    data_nd = temp_nd.insertAfter()
-    c.selectPosition(data_nd)
-    data_nd.h = "data"
-    data_nd.b = "This node must be the last top-level node. All table imports appear here and all table exports originate here."
-    
-    c.selectPosition(tmp_nd)
-    c.redraw_now()
->>>>>>> 6ff1e3d1d88052c85a9f405510b697d84854905d
-#@+node:tscv11.20180119175627.38: *3* @g.command('sqlite-import-table')
 @g.command('sqlite-import-table')
 def sqlite_import_table(event):
     
@@ -1583,7 +1327,6 @@ def sqlite_import_table(event):
     c._leo4sqlite['action'] = action
 
     InputDialogs(c)
-#@+node:tscv11.20180119175627.39: *3* @g.command('sqlite-export-table')
 @g.command('sqlite-export-table')
 def sqlite_export_table(event):
     
@@ -1593,7 +1336,6 @@ def sqlite_export_table(event):
     c._leo4sqlite['action'] = action
     
     InputDialogs(c)
-#@+node:tscv11.20180119175627.40: *3* @g.command('sqlite-insert-blob')
 @g.command('sqlite-insert-blob')
 def sqlite_insert_blob(event):   
     
@@ -1604,7 +1346,6 @@ def sqlite_insert_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.41: *3* @g.command('sqlite-extract-blob')
 @g.command('sqlite-extract-blob')
 def sqlite_extract_blob(event):    
     
@@ -1615,7 +1356,6 @@ def sqlite_extract_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.42: *3* @g.command('sqlite-open-blob')
 @g.command('sqlite-open-blob')
 def sqlite_open_blob(event):
     
@@ -1626,7 +1366,6 @@ def sqlite_open_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.43: *3* @g.command('sqlite-view-blob')
 @g.command('sqlite-view-blob')
 def sqlite_view_blob(event):
     
@@ -1637,7 +1376,6 @@ def sqlite_view_blob(event):
     
     InputDialogs(c)
     
-#@+node:tscv11.20180119175627.44: *3* @g.command('sqlite-edit-blob')
 @g.command('sqlite-edit-blob')
 def sqlite_edit_blob(event):
 
@@ -1648,7 +1386,6 @@ def sqlite_edit_blob(event):
     
     InputDialogs(c)
     
-#@+node:tsc.20180131045323.1: *3* @g.command('sqlite-clear-temp')
 @g.command('sqlite-clear-temp')
 def sqlite_clear_temp(event):
     
@@ -1661,7 +1398,6 @@ def sqlite_clear_temp(event):
         c.redraw()
     else:
         pass
-#@+node:tscv11.20180119175627.46: *3* @g.command('sqlite-delete-data')
 @g.command('sqlite-delete-data')
 def sqlite_delete_data(event):
     
@@ -1677,7 +1413,6 @@ def sqlite_delete_data(event):
     c.selectPosition(p)
     p.h = "data"
     c.redraw()
-#@+node:tscv11.20180119175627.47: *3* @g.command('sqlite-purge-files')
 @g.command('sqlite-purge-files')
 def sqlite_purge_files(event):
     
@@ -1696,7 +1431,4 @@ def sqlite_purge_files(event):
     if files:
         for filename in files:
             os.unlink(filename)
-#@-others
 
-#@-others
-#@-leo
